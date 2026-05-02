@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+  <header class="header">
+    <h1>Dashboard</h1>
+    <button id="dark-mode-toggle" class="toggle-btn">Toggle Dark Mode</button>
+  </header>
+
+  <main class="dashboard">
+    <section class="card" id="revenue-card">
+      <h2>Revenue</h2>
+      <canvas id="revenue-chart"></canvas>
+    </section>
+
+    <section class="card" id="users-card">
+      <h2>Users</h2>
+      <canvas id="users-chart"></canvas>
+    </section>
+
+    <section class="card" id="traffic-card">
+      <h2>Traffic Sources</h2>
+      <canvas id="traffic-chart"></canvas>
+    </section>
+
+    <section class="card" id="sales-card">
+      <h2>Sales</h2>
+      <canvas id="sales-chart"></canvas>
+    </section>
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>
