@@ -1,172 +1,169 @@
-# MarketPulse MVP v1 🤖📊
+# MarketPulse
 
-Real-time trading intelligence bot that tracks **Gold (XAU/USD)**, **stocks** (SPY, NASDAQ), and **breaking financial news**. It runs AI-powered sentiment analysis to detect early trend shifts and sends instant Telegram alerts.
+MarketPulse is an AI market-intelligence bot for busy traders, founders, and finance creators who need a fast answer to one painful question:
 
----
+> "What changed in the market, why does it matter, and should I pay attention now?"
 
-## 🧱 Features
+It monitors a configurable asset watchlist, pulls current financial headlines, runs AI sentiment analysis, and sends a concise Telegram decision brief with risk level, suggested posture, top price moves, news drivers, and what to watch next.
 
-- **Live Market Data**: Pulls 5-minute interval prices for Gold, SPY, and NASDAQ via Yahoo Finance.
-- **News Scraper**: Aggregates headlines from Investing.com, Yahoo Finance, and CNBC RSS feeds.
-- **AI Sentiment Engine**: Uses OpenAI GPT-4o-mini to analyze sentiment, affected assets, and early trend signals.
-- **Telegram Alerts**: Sends formatted, emoji-rich alerts to your Telegram chat every 10 minutes.
-- **Graceful Shutdown**: Handles Ctrl+C and SIGTERM cleanly without losing state.
-- **Robust Error Handling**: Individual component failures don't crash the bot.
+This is educational decision support, not financial advice.
 
----
+## Why People Would Pay
 
-## 📁 Project Structure
+Most retail traders and market-aware operators lose time jumping between charts, news tabs, social feeds, and Telegram groups. MarketPulse reduces that noise into a simple recurring brief:
 
+- Saves time by compressing market data and headlines into one alert.
+- Reduces missed moves by flagging large cross-market shifts.
+- Lowers decision stress by separating routine scans from high-attention setups.
+- Creates a monetizable signal layer for private communities, newsletters, paid Telegram channels, and creator products.
+
+## Current Features
+
+- Configurable watchlist through `MARKETPULSE_ASSETS`.
+- Yahoo Finance market data via `yfinance`.
+- RSS headline collection from financial news sources.
+- Gemini-powered sentiment analysis.
+- Telegram HTML alerts.
+- Risk-level classification: `Low`, `Medium`, or `High`.
+- Largest-move summary and news-driver digest.
+- Safe one-shot mode for testing and scheduled deployments.
+- Graceful shutdown for long-running bot mode.
+
+## Example Alert
+
+```text
+MarketPulse: bearish news pressure building
+
+Risk level: Medium
+Suggested posture: Market conditions are active. Wait for confirmation before acting.
+
+Prices
++ GOLD: $382.10 (+0.42%)
+- SPY: $640.20 (-0.81%)
++ BTC: $72,450.00 (+1.34%)
+
+Largest moves
+- BTC +1.34%
+- SPY -0.81%
+- GOLD +0.42%
+
+News drivers
+- Fed officials signal patience on rates
+- Gold holds gains as dollar softens
+
+AI read
+Overall sentiment: bearish
+Affected assets: stocks, usd, gold
+Early trend signal: yes
+Confidence: 74
+Why it matters: Risk assets may remain sensitive to rate expectations.
+Watch next: US inflation data and Treasury yields.
 ```
-marketpulse/
-├── main.py           # Orchestration loop
-├── market.py         # Price fetcher (yfinance)
-├── news.py           # RSS news scraper
-├── sentiment.py      # OpenAI sentiment analysis
-├── notifier.py       # Telegram alert sender
-├── .env              # Environment variables (not committed)
-├── .env.example      # Template for env vars
-├── requirements.txt  # Python dependencies
-├── .gitignore        # Python gitignore
-└── README.md         # This file
-```
 
----
-
-## ⚙️ Installation
-
-### 1. Clone / Navigate to Project
+## Setup
 
 ```bash
 cd marketpulse
-```
-
-### 2. Create Virtual Environment (Recommended)
-
-```bash
 python -m venv venv
-
-# Windows
 venv\Scripts\activate
-
-# macOS / Linux
-source venv/bin/activate
-```
-
-### 3. Install Dependencies
-
-```bash
 pip install -r requirements.txt
+copy .env.example .env
 ```
 
----
-
-## 🔑 Environment Variables
-
-Copy the example file and fill in your real credentials:
-
-```bash
-cp .env.example .env
-```
-
-Edit `.env`:
+Fill in `.env`:
 
 ```env
-OPENAI_API_KEY=sk-xxxxxxxxxxxxxxxxxxxxxxxx
-TELEGRAM_BOT_TOKEN=123456789:ABCdefGHIjklMNOpqrSTUvwxyz
-TELEGRAM_CHAT_ID=123456789
+GOOGLE_API_KEY=your_gemini_api_key_here
+TELEGRAM_BOT_TOKEN=your_telegram_bot_token_here
+TELEGRAM_CHAT_ID=your_telegram_chat_id_here
+SCAN_INTERVAL_SECONDS=600
+MARKETPULSE_ASSETS=GOLD=GLD,SPY=SPY,NASDAQ=^IXIC,BTC=BTC-USD
 ```
 
-### How to Get Credentials
+## Run
 
-| Variable | How to Obtain |
-|----------|--------------|
-| `OPENAI_API_KEY` | [platform.openai.com/api-keys](https://platform.openai.com/api-keys) |
-| `TELEGRAM_BOT_TOKEN` | Message [@BotFather](https://t.me/botfather) on Telegram, create a new bot, and copy the token. |
-| `TELEGRAM_CHAT_ID` | Message [@userinfobot](https://t.me/userinfobot) on Telegram to get your numeric user ID. |
-
----
-
-## 🚀 Usage
-
-### Run the Bot
+By default, `main.py` runs a one-shot cycle for safer testing.
 
 ```bash
 python main.py
 ```
 
-You should see output like:
+To run continuously:
 
-```
-2024-05-20 14:30:00 | INFO     | marketpulse | ==================================================
-2024-05-20 14:30:00 | INFO     | marketpulse | MarketPulse Bot started
-2024-05-20 14:30:00 | INFO     | marketpulse | Scan interval: 600 seconds
-2024-05-20 14:30:00 | INFO     | marketpulse | ==================================================
-2024-05-20 14:30:05 | INFO     | marketpulse | --- Cycle 1 ---
-...
+```bash
+set CI_ONE_SHOT=false
+python main.py
 ```
 
-### Stop the Bot
+## Run Daily With GitHub Actions
 
-Press `Ctrl+C` for graceful shutdown.
+This repo includes `.github/workflows/daily-marketpulse.yml` at the repository root, which runs MarketPulse once per day at `13:00 UTC` and can also be triggered manually from the GitHub Actions tab.
 
----
+Add these repository secrets in GitHub:
 
-## 📲 Example Telegram Alert
+- `GOOGLE_API_KEY`
+- `TELEGRAM_BOT_TOKEN`
+- `TELEGRAM_CHAT_ID`
 
+Optional repository variable:
+
+- `MARKETPULSE_ASSETS`: overrides the default watchlist, for example `GOLD=GLD,SPY=SPY,NASDAQ=^IXIC,BTC=BTC-USD`.
+
+To change the run time, edit the cron line in `.github/workflows/daily-marketpulse.yml`.
+
+## Configuration
+
+`SCAN_INTERVAL_SECONDS` controls how often the bot scans in continuous mode.
+
+`MARKETPULSE_ASSETS` controls the watchlist. Use `NAME=TICKER` pairs separated by commas:
+
+```env
+MARKETPULSE_ASSETS=GOLD=GLD,SPY=SPY,NASDAQ=^IXIC,BTC=BTC-USD,ETH=ETH-USD
 ```
-📊 MarketPulse Update
 
-💰 Prices
-🟢 GOLD: $2,350.00 (+0.25%)
-🔴 SPY: $520.00 (-0.15%)
-🟢 NASDAQ: $16,500.00 (+0.40%)
+## Commercialization Path
 
-🧠 Sentiment Analysis
-Overall sentiment: bullish
-Affected assets: gold, stocks
-Early trend signal: yes
-Confidence: 78
+Fastest marketable version:
+
+- Launch a free Telegram channel with delayed or daily briefs.
+- Offer a paid private channel with faster interval alerts and custom watchlists.
+- Sell niche versions: crypto macro, gold/FX, stock-index risk, founder treasury watch.
+- Add Stripe and a hosted dashboard after validating demand through Telegram.
+- Add user-specific watchlists only after people are willing to pay for the default briefs.
+
+Good starter pricing:
+
+- Free: one daily public digest.
+- Pro: $9-$19/month for 10-minute Telegram alerts.
+- Community/Creator: $49-$199/month for branded private-channel briefs.
+
+## Project Structure
+
+```text
+marketpulse/
+├── main.py           # Orchestration loop
+├── market.py         # Configurable price fetcher
+├── news.py           # RSS news collector
+├── sentiment.py      # Gemini sentiment engine
+├── intelligence.py   # Decision brief and alert formatting
+├── notifier.py       # Telegram sender
+├── test_cycle.py     # One-shot end-to-end cycle
+├── .env.example      # Configuration template
+└── requirements.txt
 ```
 
----
+## Troubleshooting
 
-## ⚡ How It Detects Early Trends
+- `GOOGLE_API_KEY not set`: ensure `.env` exists and contains a valid key.
+- No Telegram messages: start a chat with your bot first, then verify `TELEGRAM_CHAT_ID`.
+- Empty price data: confirm the ticker is supported by Yahoo Finance.
+- Dependency errors: run `pip install -r requirements.txt` inside the virtual environment.
+- Telegram formatting errors: the app escapes user/news/AI content before sending HTML.
 
-1. **News Before Price Reacts**  
-   RSS feeds update faster than chart indicators.
+## Next High-ROI Upgrades
 
-2. **Sentiment Clustering**  
-   Multiple headlines pointing the same direction → stronger signal.
-
-3. **Price + News Mismatch**  
-   Example: Gold is rising, but bearish news floods in → possible reversal.
-
----
-
-## 🔥 V2 Upgrade Ideas
-
-- [ ] Twitter / X scraping for real-time crowd sentiment
-- [ ] Correlation engine (USD ↔ Gold)
-- [ ] Volatility spike detector
-- [ ] BREAKING NEWS priority mode
-- [ ] Backtesting system
-- [ ] Web dashboard (SaaS-ready)
-
----
-
-## 🛠 Troubleshooting
-
-| Problem | Solution |
-|---------|----------|
-| `Import "dotenv" could not be resolved` | Run `pip install -r requirements.txt` inside your virtual environment. |
-| `OPENAI_API_KEY not set` | Ensure `.env` exists and is populated; `python-dotenv` loads it automatically. |
-| No Telegram messages | Double-check `TELEGRAM_BOT_TOKEN` and `TELEGRAM_CHAT_ID`. Start a chat with your bot first. |
-| `yfinance` returns empty data | Some tickers (especially `XAUUSD=X`) can be intermittent. The bot logs warnings and skips them. |
-| RSS feed fails | Individual feed failures are logged but don't stop the bot; others continue working. |
-
----
-
-## 📜 License
-
-MIT — build, trade, and iterate freely.
+- Add a landing page with waitlist capture.
+- Add Stripe subscriptions and per-user watchlists.
+- Add alert thresholds per asset.
+- Add a daily performance report showing which alerts preceded major moves.
+- Add a simple web dashboard for non-Telegram users.
