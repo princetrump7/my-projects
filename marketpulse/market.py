@@ -13,7 +13,7 @@ import yfinance as yf
 logger = logging.getLogger(__name__)
 
 ASSETS = {
-    "GOLD": "GLD",
+    "GOLD": "XAUUSD",
     "SPY": "SPY",
     "NASDAQ": "^IXIC"
 }
@@ -26,7 +26,7 @@ def _configured_assets() -> Dict[str, str]:
     """
     Parse MARKETPULSE_ASSETS from env.
 
-    Format: GOLD=GLD,SPY=SPY,NASDAQ=^IXIC,BTC=BTC-USD
+    Format: GOLD=XAUUSD,SPY=SPY,NASDAQ=^IXIC,BTC=BTC-USD
     """
     raw_assets = os.getenv("MARKETPULSE_ASSETS", "").strip()
     if not raw_assets:

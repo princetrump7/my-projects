@@ -1,0 +1,11 @@
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.env
+.git
+.gitignore
+marketpulse.db
+*.md
+test_*.py
+debug_*.py
