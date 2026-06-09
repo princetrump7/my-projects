@@ -1,9 +1,10 @@
 """
-Financial news scraper via RSS feeds.
+Financial news scraper via RSS feeds — expanded to 7 sources + ticker extraction.
 """
 
 import logging
-from typing import List
+import re
+from typing import List, Tuple
 
 import feedparser
 
@@ -12,60 +13,56 @@ logger = logging.getLogger(__name__)
 RSS_FEEDS = [
     "https://www.investing.com/rss/news_25.rss",
     "https://feeds.finance.yahoo.com/rss/2.0/headline?s=gold",
-    "https://www.cnbc.com/id/100003114/device/rss/rss.html"
+    "https://www.cnbc.com/id/100003114/device/rss/rss.html",
+    "https://www.marketwatch.com/rss/topstories",
+    "https://feeds.content.dowjones.io/public/rss/mw_topstories",
+    "https://seekingalpha.com/feed.xml",
+    "https://www.benzinga.com/feed.xml",
 ]
 
-MAX_HEADLINES_PER_FEED = 5
-MAX_TOTAL_HEADLINES = 15
+MAX_PER_FEED = 5
+MAX_TOTAL = 20
+
+_TICKER_RE = re.compile(r"\$?([A-Z]{1,5})")
+_COMMON_WORDS = {
+    "A", "I", "AN", "OR", "AND", "THE", "FOR", "NOT", "BUT", "ARE",
+    "WAS", "HAS", "HAD", "ALL", "NEW", "TO", "UP", "AT", "IN", "OF",
+    "ON", "BY", "AS", "IS", "BE", "MY", "WE", "NO", "SO", "IF", "DO",
+    "CEO", "CFO", "EPS", "IPO", "ETF", "SEC", "FED", "GDP", "CPI",
+    "USA", "UK", "EU", "USD", "EUR", "GBP", "JPY", "AI", "ATH", "YTD",
+}
 
 
 def get_news() -> List[str]:
-    """
-    Scrape latest headlines from configured RSS feeds.
-
-    Returns
-    -------
-    list of str
-        Up to 15 headline strings.
-    """
-    headlines: List[str] = []
-
+    headlines = []
     for url in RSS_FEEDS:
         try:
             feed = feedparser.parse(url)
-
-            if feed.bozo and feed.get("bozo_exception"):
-                logger.warning(
-                    "Feed warning for %s: %s", url, feed.bozo_exception
-                )
-                # Continue anyway; partial data may still be useful
-
-            entries = feed.entries[:MAX_HEADLINES_PER_FEED]
+            entries = feed.entries[:MAX_PER_FEED]
             for entry in entries:
                 title = getattr(entry, "title", None)
                 if title and isinstance(title, str):
                     headlines.append(title.strip())
-
-            logger.info("Fetched %d headlines from %s", len(entries), url)
-
         except Exception as exc:
-            logger.error("Failed to parse feed %s: %s", url, exc)
+            logger.debug("Feed error %s: %s", url, exc)
 
-    # Deduplicate while preserving order
-    seen: set[str] = set()
-    deduped: List[str] = []
+    seen = set()
+    deduped = []
     for h in headlines:
-        lower = h.lower()
-        if lower not in seen:
-            seen.add(lower)
+        if h.lower() not in seen:
+            seen.add(h.lower())
             deduped.append(h)
-
-    result = deduped[:MAX_TOTAL_HEADLINES]
-    logger.info("Total unique headlines: %d", len(result))
-    return result
+    return deduped[:MAX_TOTAL]
 
 
-if __name__ == "__main__":
-    logging.basicConfig(level=logging.INFO)
-    for headline in get_news():
-        print(headline)
+def _extract_tickers(headline: str) -> List[str]:
+    return [c for c in _TICKER_RE.findall(headline) if len(c) >= 2 and c not in _COMMON_WORDS]
+
+
+def get_news_by_ticker(ticker: str) -> Tuple[List[str], List[str]]:
+    all_news = get_news()
+    tu = ticker.upper()
+    filtered = [h for h in all_news if tu in _extract_tickers(h)]
+    if len(filtered) < 1 and all_news:
+        filtered = all_news[:12]
+    return filtered, all_news

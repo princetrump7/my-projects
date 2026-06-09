@@ -1,23 +1,22 @@
 """
-Smart Money / Copy Trading tracker.
-Uses SEC EDGAR EFTS API to monitor 13F-HR filings for famous investors.
+Smart Money / Copy Trading tracker — SEC EDGAR 13F-HR filings.
 """
 
 from __future__ import annotations
 
 import json
 import logging
-import urllib.request
+import os
 import urllib.parse
+import urllib.request
 from datetime import datetime, timedelta, timezone
 from typing import Any, Dict, List
 
 logger = logging.getLogger(__name__)
 
-_HEADERS = {"User-Agent": "MarketPulse-Research admin@example.com"}
+_HEADERS = {"User-Agent": f"MarketPulse-Research {os.getenv('SEC_CONTACT_EMAIL', 'admin@example.com')}"}
 _EFTS_URL = "https://efts.sec.gov/LATEST/search-index"
 
-# Famous hedge funds / investors CIKs
 SMART_MONEY_CIKS = {
     "0001067983": "Berkshire Hathaway (Warren Buffett)",
     "0001602495": "ARK Investment Management (Cathie Wood)",
@@ -27,45 +26,28 @@ SMART_MONEY_CIKS = {
     "0001166126": "Bridgewater Associates (Ray Dalio)",
 }
 
+
 def _get(url: str) -> str | None:
     try:
         req = urllib.request.Request(url, headers=_HEADERS)
         with urllib.request.urlopen(req, timeout=12) as r:
             return r.read().decode("utf-8", errors="replace")
-    except Exception as exc:
-        logger.debug("GET %s failed: %s", url, exc)
+    except Exception:
         return None
 
+
 def get_recent_13f(days_back: int = 90) -> List[Dict[str, Any]]:
-    """
-    Fetch recent 13F-HR filings for tracked smart money.
-    """
     today = datetime.now(timezone.utc).date()
     start = today - timedelta(days=days_back)
-    
-    ciks_str = ",".join(f'"{c}"' for c in SMART_MONEY_CIKS.keys())
-
-    params = urllib.parse.urlencode({
-        "q": f"ciks:({ciks_str})",
-        "forms": "13F-HR",
-        "dateRange": "custom",
-        "startdt": start.isoformat(),
-        "enddt": today.isoformat(),
-        "hits.hits.total.value": "true",
-    })
-    url = f"{_EFTS_URL}?{params}"
-
-    body = _get(url)
+    ciks_str = ",".join(f'"{c}"' for c in SMART_MONEY_CIKS)
+    params = urllib.parse.urlencode({"q": f"ciks:({ciks_str})", "forms": "13F-HR", "dateRange": "custom", "startdt": start.isoformat(), "enddt": today.isoformat()})
+    body = _get(f"{_EFTS_URL}?{params}")
     if not body:
         return []
-
     try:
-        data = json.loads(body)
-        hits = data.get("hits", {}).get("hits", [])
-    except json.JSONDecodeError as exc:
-        logger.error("EFTS JSON parse failed: %s", exc)
+        hits = json.loads(body).get("hits", {}).get("hits", [])
+    except json.JSONDecodeError:
         return []
-
     results = []
     for hit in hits:
         hit_id = hit.get("_id", "")
@@ -73,24 +55,9 @@ def get_recent_13f(days_back: int = 90) -> List[Dict[str, Any]]:
         ciks = source.get("ciks", [])
         if not ciks or ":" not in hit_id:
             continue
-            
         cik = ciks[0].zfill(10)
-        investor_name = SMART_MONEY_CIKS.get(cik, "Unknown Investor")
-        
+        name = SMART_MONEY_CIKS.get(cik, "Unknown Investor")
         acc_raw, filename = hit_id.split(":", 1)
-        url2 = f"https://www.sec.gov/Archives/edgar/data/{cik.lstrip('0')}/{acc_raw.replace('-', '')}/{filename}"
-        
-        results.append({
-            "investor": investor_name,
-            "form": "13F-HR",
-            "date": source.get("file_date", "Unknown"),
-            "url": url2
-        })
-
+        url = f"https://www.sec.gov/Archives/edgar/data/{cik.lstrip('0')}/{acc_raw.replace('-', '')}/{filename}"
+        results.append({"investor": name, "form": "13F-HR", "date": source.get("file_date", "Unknown"), "url": url})
     return results
-
-if __name__ == "__main__":
-    logging.basicConfig(level=logging.INFO)
-    res = get_recent_13f()
-    for r in res:
-        print(r)

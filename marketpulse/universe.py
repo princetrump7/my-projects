@@ -1,9 +1,5 @@
-"""
-Liquid ticker universe for MarketPulse screener.
-"""
+"""Liquid ticker universe for MarketPulse screener."""
 
-# A static list of highly liquid, well-known stocks for the MVP screener.
-# Fetching data for 500+ stocks in real-time sequentially is too slow.
 LIQUID_100 = [
     "AAPL", "MSFT", "NVDA", "GOOGL", "AMZN", "META", "TSLA", "BRK-B", "LLY", "TSM",
     "AVGO", "V", "JPM", "UNH", "WMT", "MA", "PG", "JNJ", "HD", "MRK",
@@ -14,5 +10,5 @@ LIQUID_100 = [
     "LMT", "MDT", "TJX", "VRTX", "GS", "COP", "BLK", "MDLZ", "C", "AXP",
     "ADI", "MMC", "REGN", "BMY", "CB", "CVS", "CI", "TMUS", "BSX", "ZTS",
     "KLAC", "GILD", "DE", "FI", "SNPS", "CSX", "CDNS", "WM", "SHW", "SLB",
-    "MO", "FDX", "HCA", "FCX", "TGT", "EOG", "AON", "NEM", "OXY", "PLTR"
+    "MO", "FDX", "HCA", "FCX", "TGT", "EOG", "AON", "NEM", "OXY", "PLTR",
 ]

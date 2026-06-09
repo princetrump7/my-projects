@@ -1,50 +1,44 @@
-"""
-One-shot end-to-end test cycle for MarketPulse.
-"""
+"""One-shot end-to-end smoke test for MarketPulse."""
 
 import logging
-import sys
+import os
 from dotenv import load_dotenv
+
+load_dotenv()
+
+logging.basicConfig(level=logging.INFO, format="%(asctime)s | %(levelname)-8s | %(name)s | %(message)s")
+logger = logging.getLogger("test")
 
 from market import get_prices
 from news import get_news
 from sentiment import analyze_sentiment
-from notifier import send_alert
 from intelligence import build_decision_brief, format_telegram_brief
+from notifier import send_alert
 
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s | %(levelname)-8s | %(name)s | %(message)s"
-)
+def run():
+    print("=" * 50)
+    print("Running one full MarketPulse cycle...")
+    print("=" * 50)
 
-if hasattr(sys.stdout, "reconfigure"):
-    sys.stdout.reconfigure(encoding="utf-8")
+    prices = get_prices()
+    logger.info("Prices: %s", {k: v.get("change") for k, v in prices.items()})
 
-load_dotenv()
+    headlines = get_news()
+    logger.info("Headlines: %d fetched", len(headlines))
 
-print("=" * 50)
-print("Running one full MarketPulse cycle...")
-print("=" * 50)
+    sentiment = analyze_sentiment(headlines) if headlines else "No news."
+    logger.info("Sentiment: %s", sentiment[:100] if sentiment else "None")
 
-# 1. Market data
-prices = get_prices()
-print(f"\n📊 Prices: {prices}")
+    brief = build_decision_brief(prices, headlines, sentiment)
+    message = format_telegram_brief(prices, brief)
 
-# 2. News
-news = get_news()
-print(f"\n📰 Headlines: {len(news)} fetched")
-for h in news[:3]:
-    print(f"  • {h}")
+    print()
+    print(message)
+    print()
 
-# 3. Sentiment
-sentiment = analyze_sentiment(news)
-print(f"\n🧠 Sentiment:\n{sentiment}")
+    sent = send_alert(message)
+    logger.info("Alert sent: %s", sent)
+    print("Done.")
 
-# 4. Alert
-brief = build_decision_brief(prices, news, sentiment)
-message = format_telegram_brief(prices, brief)
-
-print("\n📲 Sending Telegram alert...")
-send_alert(message)
-
-print("\n✅ Full cycle test completed!")
+if __name__ == "__main__":
+    run()

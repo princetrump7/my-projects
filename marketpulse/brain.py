@@ -1,55 +1,28 @@
 """
-MarketPulse brain — all Gemini prompts live here.
-One place to tune AI behaviour for every feature.
+MarketPulse brain — all AI prompts in one place.
+Uses the unified provider layer (ai.py) — swap backends via env vars.
 """
 
 from __future__ import annotations
 
 import logging
-import os
 from typing import Any, Dict, List
 
-from google import genai
+from ai import generate as _ai_generate
 
 logger = logging.getLogger(__name__)
 
-_client = None
-
-
-def _get_client() -> genai.Client:
-    """Lazy-init the Gemini client once."""
-    global _client
-    if _client is None:
-        api_key = os.getenv("GOOGLE_API_KEY")
-        if not api_key:
-            raise RuntimeError("GOOGLE_API_KEY not set")
-        _client = genai.Client(api_key=api_key)
-    return _client
-
 
 def _ask(prompt: str) -> str:
-    """Single entry-point for all Gemini calls with error handling."""
     try:
-        resp = _get_client().models.generate_content(
-            model="gemini-2.5-flash",
-            contents=prompt
-        )
-        return resp.text.strip() if resp.text else "AI analysis unavailable."
+        return _ai_generate(prompt)
     except Exception as exc:
-        logger.error("Gemini call failed: %s", exc)
+        logger.error("AI call failed: %s", exc)
         return "⚠️ AI analysis temporarily unavailable."
 
 
-# ---------------------------------------------------------------------------
-# Feature prompts
-# ---------------------------------------------------------------------------
-
 def why_did_it_move(ticker: str, change: float, headlines: List[str]) -> str:
-    """Explain why a specific stock moved today."""
-    news_block = (
-        "\n".join(f"- {h}" for h in headlines[:8])
-        if headlines else "- No specific news found."
-    )
+    news_block = "\n".join(f"- {h}" for h in headlines[:8]) if headlines else "- No specific news found."
     return _ask(f"""You are MarketPulse, a sharp market intelligence engine.
 
 A trader asked: "Why did {ticker} move today?"
@@ -72,11 +45,7 @@ Rules: under 150 words, direct, no fluff, no disclaimers.""")
 
 
 def morning_brief(prices: Dict[str, Any], headlines: List[str], sentiment: str) -> str:
-    """Generate the morning alpha brief."""
-    price_lines = "\n".join(
-        f"- {n}: ${i['price']:,.2f} ({i['change']:+.2f}%)"
-        for n, i in prices.items()
-    )
+    price_lines = "\n".join(f"- {n}: ${i['price']:,.2f} ({i['change']:+.2f}%)" for n, i in prices.items())
     top_news = "\n".join(f"- {h}" for h in headlines[:5])
     return _ask(f"""You are MarketPulse. Generate a punchy morning alpha brief.
 
@@ -102,11 +71,7 @@ Under 120 words. Traders are busy.""")
 
 
 def evening_recap(prices: Dict[str, Any], headlines: List[str]) -> str:
-    """Generate the end-of-day recap."""
-    price_lines = "\n".join(
-        f"- {n}: ${i['price']:,.2f} ({i['change']:+.2f}%)"
-        for n, i in prices.items()
-    )
+    price_lines = "\n".join(f"- {n}: ${i['price']:,.2f} ({i['change']:+.2f}%)" for n, i in prices.items())
     top_news = "\n".join(f"- {h}" for h in headlines[:5])
     return _ask(f"""You are MarketPulse. Generate a brief end-of-day recap.
 
@@ -127,7 +92,6 @@ Under 100 words. Direct.""")
 
 
 def analyze_trending_tickers(tickers: List[tuple]) -> str:
-    """Give a quick AI read on trending social tickers."""
     lines = "\n".join(f"- {t}: {c} mentions" for t, c in tickers[:10])
     return _ask(f"""You are MarketPulse. These tickers are trending on Reddit right now:
 
@@ -143,19 +107,13 @@ Each line under 15 words. Total under 80 words.""")
 
 
 def format_insider_brief(trades: List[Dict[str, Any]]) -> str:
-    """Format a list of SEC insider trades into a punchy Telegram alert."""
     if not trades:
         return "No significant insider transactions found in recent filings."
-
     trade_lines = []
     for t in trades[:6]:
         sign = "+" if t["type"] == "BUY" else "-"
-        trade_lines.append(
-            f"- {t['ticker']} ({t['company']}): {t['role']} {t['type']} "
-            f"{t['shares']:,} shares @ ${t['price']:.2f} = ${t['value']:,.0f}"
-        )
+        trade_lines.append(f"- {t['ticker']} ({t['company']}): {t['role']} {t['type']} {t['shares']:,} shares @ ${t['price']:.2f} = ${t['value']:,.0f}")
     block = "\n".join(trade_lines)
-
     return _ask(f"""You are MarketPulse. Format these recent SEC insider trades for Telegram traders.
 
 RAW TRADES:
@@ -174,15 +132,9 @@ Rules: bold tickers, under 150 words total, flag buys as potentially bullish."""
 
 
 def explain_signals(signals: List[Dict[str, Any]]) -> str:
-    """Produce an AI swing trade brief from a list of detected signals."""
     if not signals:
         return "No high-confidence signals detected in the current scan."
-
-    sig_lines = "\n".join(
-        f"- {s['ticker']}: {s['label']} | {s['detail']} | price ${s['price']:.2f} | confidence {s['confidence']}%"
-        for s in signals[:6]
-    )
-
+    sig_lines = "\n".join(f"- {s['ticker']}: {s['label']} | {s['detail']} | price ${s['price']:.2f} | confidence {s['confidence']}%" for s in signals[:6])
     return _ask(f"""You are MarketPulse, a swing trade signal engine.
 
 DETECTED SIGNALS:
@@ -200,7 +152,6 @@ Rules: under 160 words, actionable language, no fluff.""")
 
 
 def translate_screener_query(query: str) -> Dict[str, Any]:
-    """Translate a natural language query into JSON filter criteria."""
     import json
     prompt = f"""You are MarketPulse. A user wants to screen stocks.
 User query: "{query}"
@@ -217,24 +168,17 @@ Output ONLY valid JSON. Nothing else. If a parameter isn't mentioned, omit it.
 """
     response_text = _ask(prompt)
     try:
-        # Strip out markdown formatting if Gemini adds it
         cleaned = response_text.replace("```json", "").replace("```", "").strip()
         return json.loads(cleaned)
     except Exception as exc:
-        logger.error("Failed to parse Gemini screener JSON: %s (Raw: %s)", exc, response_text)
+        logger.error("Failed to parse screener JSON: %s (Raw: %s)", exc, response_text)
         return {}
 
 
 def format_smartmoney_brief(filings: List[Dict[str, Any]]) -> str:
-    """Format a list of 13F/smart money filings into a Telegram alert."""
     if not filings:
         return "No recent major smart money (13F) filings detected."
-
-    lines = "\n".join(
-        f"- {f['investor']} filed {f['form']} on {f['date']} (URL: {f['url']})"
-        for f in filings[:5]
-    )
-
+    lines = "\n".join(f"- {f['investor']} filed {f['form']} on {f['date']} (URL: {f['url']})" for f in filings[:5])
     return _ask(f"""You are MarketPulse. Format these recent SEC 13F/institutional filings for Telegram traders.
 
 RAW FILINGS:
@@ -248,3 +192,41 @@ For each filing:
 
 Rules: under 120 words total, direct, no fluff. Provide context on the investor.""")
 
+
+def bull_bear_arguments(ticker: str, price: float, change: float, headlines: List[str], insider_trades: List[Dict[str, Any]], signals: List[Dict[str, Any]]) -> str:
+    news_block = "\n".join(f"- {h}" for h in headlines[:8]) if headlines else "- No recent news."
+    insider_block = "\n".join(f"- {t['ticker']}: {t['role']} {'bought' if t['type']=='BUY' else 'sold'} ${t['value']:,.0f} worth" for t in insider_trades[:3]) if insider_trades else "- No recent insider activity."
+    signal_map = {}
+    for s in signals[:5]:
+        signal_map.setdefault(s["ticker"], []).append(s["label"])
+    signal_block = "\n".join(f"- {t}: {', '.join(labels)}" for t, labels in signal_map.items()) if signal_map else "- No signals detected."
+    return _ask(f"""You are MarketPulse, a balanced market analyst. Present both sides of the trade.
+
+A trader is evaluating {ticker} (${price:.2f}, {change:+.2f}% today).
+
+RECENT NEWS:
+{news_block}
+
+INSIDER ACTIVITY:
+{insider_block}
+
+TECHNICAL SIGNALS:
+{signal_block}
+
+Format a balanced bull vs bear summary in this EXACT format:
+
+<b>Bull vs Bear — {ticker}</b>
+
+<b>🐂 Bull Case</b>
+- [reason 1 — tie to news/signal/insider]
+- [reason 2]
+- [reason 3]
+
+<b>🐻 Bear Case</b>
+- [reason 1]
+- [reason 2]
+- [reason 3]
+
+<b>Edge:</b> [1-sentence verdict based on weight of evidence]
+
+Rules: under 140 words, balanced, evidence-based.""")
