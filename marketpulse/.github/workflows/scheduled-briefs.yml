@@ -1,0 +1,44 @@
+name: Scheduled MarketPulse Briefs
+
+on:
+  schedule:
+    - cron: '15 13 * * 1-5'
+    - cron: '30 20 * * 1-5'
+  workflow_dispatch:
+    inputs:
+      type:
+        description: 'Brief type'
+        required: true
+        type: choice
+        options: [morning, evening]
+
+jobs:
+  run-brief:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+      - run: |
+          python -m pip install --upgrade pip
+          pip install -r marketpulse/requirements.txt
+      - name: Determine Brief Type
+        id: type
+        run: |
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            echo "BRIEF_TYPE=${{ github.event.inputs.type }}" >> $GITHUB_ENV
+          else
+            HOUR=$(date -u +%H)
+            echo "BRIEF_TYPE=$([ "$HOUR" = "13" ] && echo "morning" || echo "evening")" >> $GITHUB_ENV
+          fi
+      - name: Run Brief
+        working-directory: marketpulse
+        env:
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+          OPENROUTER_MODEL: ${{ vars.OPENROUTER_MODEL }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          CI_ONE_SHOT: "true"
+        run: python run_scheduled.py --type $BRIEF_TYPE

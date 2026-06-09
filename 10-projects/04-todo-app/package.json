@@ -1,8 +1,0 @@
-{
-  "name": "04-todo-app",
-  "version": "1.0.0",
-  "description": "Client-side todo app with localStorage persistence",
-  "scripts": {
-    "start": "npx serve ."
-  }
-}
