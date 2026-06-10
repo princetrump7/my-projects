@@ -6,6 +6,7 @@ feedparser>=6.0.0
 
 # Environment & config
 python-dotenv>=1.0.0
+flask>=3.0.0
 
 # AI
 google-genai>=1.0.0
