@@ -296,10 +296,24 @@ def build_app():
     token = os.getenv("TELEGRAM_BOT_TOKEN")
     if not token: raise RuntimeError("TELEGRAM_BOT_TOKEN not set")
     app = Application.builder().token(token).post_init(_post_init).build()
-    for cmd in ["start","why","trending","brief","watchlist","insiders","signals","screener","smartmoney","earnings","bullbear","sentiment","news","donate","redeem","subscribe","premium","alert"]:
-        handler_name = f"cmd_{cmd}"
-        if handler_name in dir():
-            app.add_handler(CommandHandler(cmd, globals()[handler_name]))
+    app.add_handler(CommandHandler("start",     cmd_start))
+    app.add_handler(CommandHandler("why",       cmd_why))
+    app.add_handler(CommandHandler("trending",  cmd_trending))
+    app.add_handler(CommandHandler("brief",     cmd_brief))
+    app.add_handler(CommandHandler("watchlist", cmd_watchlist))
+    app.add_handler(CommandHandler("insiders",  cmd_insiders))
+    app.add_handler(CommandHandler("signals",   cmd_signals))
+    app.add_handler(CommandHandler("screener",  cmd_screener))
+    app.add_handler(CommandHandler("smartmoney",cmd_smartmoney))
+    app.add_handler(CommandHandler("earnings",  cmd_earnings))
+    app.add_handler(CommandHandler("bullbear",  cmd_bullbear))
+    app.add_handler(CommandHandler("sentiment", cmd_sentiment))
+    app.add_handler(CommandHandler("news",      cmd_news))
+    app.add_handler(CommandHandler("donate",    cmd_donate))
+    app.add_handler(CommandHandler("redeem",    cmd_redeem))
+    app.add_handler(CommandHandler("subscribe", cmd_subscribe))
+    app.add_handler(CommandHandler("premium",   cmd_premium))
+    app.add_handler(CommandHandler("alert",     cmd_alert))
     return app
 
 def run_bot():
