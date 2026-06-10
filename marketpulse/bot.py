@@ -104,6 +104,32 @@ async def _job_alert_scan(context):
 
 
 
+
+
+async def cmd_start(update, context):
+    name = (update.effective_user.first_name or "Trader") if update.effective_user else "Trader"
+    msg = "<b>Welcome to MarketPulse, " + name + "!</b>\n\nYour AI market intelligence engine."
+    msg += "\n\n<b>Commands</b>"
+    msg += "\n/why TICKER - Why did this stock move?"
+    msg += "\n/trending - Hot tickers on Reddit"
+    msg += "\n/brief - Morning alpha brief"
+    msg += "\n/insiders - SEC insider buys/sells"
+    msg += "\n/signals - Swing trade setups"
+    msg += "\n/screener - AI stock screener"
+    msg += "\n/smartmoney - Latest 13F filings"
+    msg += "\n/sentiment TICKER - AI sentiment"
+    msg += "\n/bullbear TICKER - Bull vs Bear"
+    msg += "\n/earnings TICKER - Earnings summary"
+    msg += "\n/news TICKER - Ticker news"
+    msg += "\n/watchlist - Manage watchlist"
+    msg += "\n/alert - Set up alerts"
+    msg += "\n/donate - Support & get premium"
+    msg += "\n/premium - Check premium status"
+    msg += "\n\n<i>Auto: Morning 9:15 AM ET - Evening 4:30 PM ET</i>"
+    msg += "\n\n<i>Educational only. Not financial advice.</i>"
+    await _reply(update, msg)
+
+
 async def cmd_why(update, context):
     if not context.args:
         await _reply(update, "Usage: /why TICKER" + chr(10) + "Example: /why NVDA")
