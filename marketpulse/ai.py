@@ -1,13 +1,14 @@
 """
 Unified AI provider layer — supports Gemini, OpenRouter, and OpenCode.
 Auto-selects based on env vars: OpenRouter > OpenCode > Gemini (default).
+Includes retry with backoff for rate limits.
 """
 
 from __future__ import annotations
 
-import json
 import logging
 import os
+import time
 
 import requests
 
@@ -25,7 +26,7 @@ def current_provider() -> str:
 def _resolve_model() -> str:
     p = current_provider()
     if p == "openrouter":
-        return os.getenv("OPENROUTER_MODEL", "meta-llama/llama-3.1-8b-instruct:free")
+        return os.getenv("OPENROUTER_MODEL", "google/gemma-4-26b-a4b-it:free")
     if p == "opencode":
         return os.getenv("OPENCODE_MODEL", "gpt-3.5-turbo")
     return os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
@@ -38,10 +39,10 @@ def _gemini_client():
     global _client
     if _client is None:
         from google import genai
-        api_key = os.getenv("GOOGLE_API_KEY")
-        if not api_key:
+        key = os.getenv("GOOGLE_API_KEY")
+        if not key:
             raise RuntimeError("GOOGLE_API_KEY not set")
-        _client = genai.Client(api_key=api_key)
+        _client = genai.Client(api_key=key)
     return _client
 
 
@@ -69,7 +70,7 @@ def _openai_headers() -> dict:
     return h
 
 
-def _generate_openai(prompt: str) -> str:
+def _generate_openai(prompt: str, retries: int = 3) -> str:
     url = f"{_openai_url().rstrip('/')}/chat/completions"
     payload = {
         "model": _resolve_model(),
@@ -77,10 +78,25 @@ def _generate_openai(prompt: str) -> str:
         "max_tokens": int(os.getenv("AI_MAX_TOKENS", "1024")),
         "temperature": 0.3,
     }
-    resp = requests.post(url, headers=_openai_headers(), json=payload, timeout=30)
-    resp.raise_for_status()
-    data = resp.json()
-    return data["choices"][0]["message"]["content"].strip()
+    for attempt in range(retries):
+        try:
+            resp = requests.post(url, headers=_openai_headers(), json=payload, timeout=30)
+            if resp.status_code == 429 and attempt < retries - 1:
+                wait = 2 ** attempt
+                logger.warning("Rate limited (429), retrying in %ds...", wait)
+                time.sleep(wait)
+                continue
+            resp.raise_for_status()
+            data = resp.json()
+            return data["choices"][0]["message"]["content"].strip()
+        except requests.exceptions.HTTPError as e:
+            if e.response.status_code == 429 and attempt < retries - 1:
+                wait = 2 ** attempt
+                logger.warning("Rate limited, retrying in %ds...", wait)
+                time.sleep(wait)
+                continue
+            raise
+    raise RuntimeError("Max retries exceeded")
 
 
 def generate(prompt: str) -> str:
