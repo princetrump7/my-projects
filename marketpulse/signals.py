@@ -16,6 +16,13 @@ DEFAULT_UNIVERSE = [
     "AAPL", "MSFT", "NVDA", "GOOGL", "AMZN", "META", "TSLA",
     "AMD", "PLTR", "NFLX", "CRM", "UBER", "COIN", "AVGO",
     "SOFI", "ARM", "SMCI", "TSM", "MSTR", "RKLB",
+    # User additions
+    "AMAT", "LRCX", "LLY", "CRWD", "TEM", "PANW", "EOSE", "ASTS",
+    "NBIS", "KYTX", "ENVX", "ABCL", "POETF", "AAOI", "MP", "CRWV",
+    "OUST", "SMR", "HLIT", "000660.KS", "PWR", "UNH", "VRT", "ALAB",
+    "CRDO", "POET", "IONQ", "LUNR", "APLD", "MRVL", "RGTI", "QUBT",
+    "QBTS", "KULR", "INFQ", "AMBQ", "ONDS", "PENG", "LWLG", "DOCN",
+    "MRAM", "HYLN", "FLY", "TE", "AMPG", "ALMU",
 ]
 
 VOL_MULT = 2.0
