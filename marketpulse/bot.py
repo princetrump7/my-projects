@@ -144,6 +144,119 @@ async def cmd_why(update, context):
     result = why_did_it_move(ticker, change, headlines)
     await _reply(update, result)
 
+
+async def cmd_trending(update, context):
+    await _reply(update, "Scanning Reddit...")
+    tickers = get_trending_tickers(min_mentions=3)
+    if not tickers:
+        await _reply(update, "Nothing trending right now.")
+        return
+    count_block = chr(10).join(f"{i+1}. <b>{t}</b> - {c} mentions" for i, (t, c) in enumerate(tickers[:8]))
+    ai_take = analyze_trending_tickers(tickers)
+    await _reply(update, f"<b>Reddit Trending Tickers</b>" + chr(10) + chr(10) + count_block + chr(10) + chr(10) + ai_take)
+
+
+async def cmd_brief(update, context):
+    await _reply(update, "Building your alpha brief...")
+    try:
+        prices = get_prices()
+        news = get_news()
+        sentiment = analyze_sentiment(news) if news else "No news."
+        text = morning_brief(prices, news, sentiment)
+        await _reply(update, text)
+    except Exception as exc:
+        await _reply(update, f"Brief failed: {exc}")
+
+
+async def cmd_watchlist(update, context):
+    user_id = update.effective_user.id
+    args = context.args or []
+    if not args or args[0].lower() in ("show", "list"):
+        tickers = get_watchlist(user_id)
+        if not tickers:
+            await _reply(update, "Your watchlist is empty." + chr(10) + "Add: /watchlist add AAPL")
+        else:
+            chips = "  ".join(f"<code>{t}</code>" for t in tickers)
+            await _reply(update, f"<b>Your Watchlist</b>" + chr(10) + chr(10) + chips)
+        return
+    action = args[0].lower()
+    if action == "add":
+        if len(args) < 2:
+            await _reply(update, "Usage: /watchlist add TICKER")
+            return
+        ticker = args[1].upper()
+        if not _TICKER_RE.match(ticker):
+            await _reply(update, f"Invalid: {ticker}")
+            return
+        limit = get_watchlist_limit(user_id)
+        current = len(get_watchlist(user_id))
+        if current >= limit:
+            await _reply(update, f"Limit reached ({limit}). Remove or /donate for unlimited.")
+            return
+        if add_ticker(user_id, ticker):
+            await _reply(update, f"Added {ticker} ({current+1}/{limit}).")
+        else:
+            await _reply(update, f"{ticker} already in watchlist.")
+    elif action == "remove":
+        if len(args) < 2:
+            await _reply(update, "Usage: /watchlist remove TICKER")
+            return
+        ticker = args[1].upper()
+        if remove_ticker(user_id, ticker):
+            await _reply(update, f"Removed {ticker}.")
+        else:
+            await _reply(update, f"{ticker} not in watchlist.")
+    elif action == "clear":
+        c = clear_watchlist(user_id)
+        await _reply(update, f"Cleared {c} ticker(s).")
+    else:
+        await _reply(update, "Try: add, remove, clear")
+
+
+async def cmd_insiders(update, context):
+    await _reply(update, "Fetching SEC insider filings...")
+    try:
+        trades = get_insider_trades(limit=6)
+        text = format_insider_brief(trades)
+        await _reply(update, text)
+    except Exception as exc:
+        await _reply(update, f"Insider fetch failed: {exc}")
+
+
+async def cmd_signals(update, context):
+    user_id = update.effective_user.id
+    watchlist = get_watchlist(user_id)
+    universe = watchlist if watchlist else DEFAULT_UNIVERSE
+    source = "your watchlist" if watchlist else "top 20 liquid tickers"
+    await _reply(update, f"Scanning {source}...")
+    try:
+        found = scan_signals(universe)
+        if not found:
+            await _reply(update, "No high-confidence signals right now.")
+            return
+        text = explain_signals(found[:6])
+        await _reply(update, text)
+    except Exception as exc:
+        await _reply(update, f"Signal scan failed: {exc}")
+
+
+async def cmd_screener(update, context):
+    if not context.args:
+        await _reply(update, "Usage: /screener QUERY" + chr(10) + "Example: /screener profitable tech over 200B")
+        return
+    query = " ".join(context.args)
+    await _reply(update, f"Running screener: {query}...")
+    try:
+        results = screen_stocks(query)
+        if not results:
+            await _reply(update, "No stocks found.")
+            return
+        lines_list = ["<b>" + r["ticker"] + "</b> (" + r["name"] + "): $" + str(r["marketCap"]) + "B | PE: " + str(r["pe"]) for r in results]
+        await _reply(update, "<b>Screener Results</b>" + chr(10) + chr(10) + chr(10).join(lines_list))
+    except Exception as exc:
+        await _reply(update, f"Screener failed: {exc}")
+
+
 async def cmd_smartmoney(update, context):
     await _reply(update, "Checking EDGAR for 13F filings...")
     try:
