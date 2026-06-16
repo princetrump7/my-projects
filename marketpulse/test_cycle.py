@@ -1,7 +1,7 @@
 """One-shot end-to-end smoke test for MarketPulse."""
 
 import logging
-import os
+
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -9,11 +9,12 @@ load_dotenv()
 logging.basicConfig(level=logging.INFO, format="%(asctime)s | %(levelname)-8s | %(name)s | %(message)s")
 logger = logging.getLogger("test")
 
+from intelligence import build_decision_brief, format_telegram_brief
 from market import get_prices
 from news import get_news
-from sentiment import analyze_sentiment
-from intelligence import build_decision_brief, format_telegram_brief
 from notifier import send_alert
+from sentiment import analyze_sentiment
+
 
 def run():
     print("=" * 50)

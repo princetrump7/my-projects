@@ -5,11 +5,11 @@ Earnings call analysis — metrics extraction + AI summary via yfinance.
 from __future__ import annotations
 
 import logging
-from typing import Any, Dict, Optional
+from typing import Any
 
 import yfinance as yf
 
-from brain import _ask
+from ai import generate as _ai_generate
 
 logger = logging.getLogger(__name__)
 
@@ -30,7 +30,7 @@ def _fmt_money(val: Any) -> str:
     except: return "N/A"
 
 
-def _get_earnings_data(ticker_symbol: str) -> Optional[Dict[str, Any]]:
+def _get_earnings_data(ticker_symbol: str) -> dict[str, Any] | None:
     try:
         ticker = yf.Ticker(ticker_symbol)
     except Exception:
@@ -109,7 +109,7 @@ Recent Quarterly Financials:
 """
 
     if compare:
-        return _ask(f"""You are MarketPulse. A trader wants a quarterly comparison for {ticker}.
+        return _ai_generate(f"""You are MarketPulse. A trader wants a quarterly comparison for {ticker}.
 
 DATA:
 {context}
@@ -124,7 +124,7 @@ Comparisons:
 
 Under 100 words.""")
     else:
-        return _ask(f"""You are MarketPulse. A trader wants an earnings summary for {ticker}.
+        return _ai_generate(f"""You are MarketPulse. A trader wants an earnings summary for {ticker}.
 
 DATA:
 {context}

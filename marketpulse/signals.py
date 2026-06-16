@@ -5,7 +5,7 @@ Technical signal engine — 6 signal types using yfinance data.
 from __future__ import annotations
 
 import logging
-from typing import Any, Dict, List
+from typing import Any
 
 import pandas as pd
 import yfinance as yf
@@ -44,7 +44,7 @@ def _ema(close: pd.Series, span: int) -> pd.Series:
     return close.ewm(span=span, adjust=False).mean()
 
 
-def _analyze(ticker: str) -> List[Dict[str, Any]]:
+def _analyze(ticker: str) -> list[dict[str, Any]]:
     signals = []
     try:
         hist = yf.Ticker(ticker).history(period="60d")
@@ -89,7 +89,7 @@ def _analyze(ticker: str) -> List[Dict[str, Any]]:
     return signals
 
 
-def scan_signals(tickers: List[str] | None = None) -> List[Dict[str, Any]]:
+def scan_signals(tickers: list[str] | None = None) -> list[dict[str, Any]]:
     universe = tickers if tickers else DEFAULT_UNIVERSE
     all_s = []
     for t in universe:

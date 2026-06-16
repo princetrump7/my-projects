@@ -5,19 +5,18 @@ Market data fetcher for configurable public-market watchlists.
 import logging
 import os
 from datetime import datetime
-from typing import Dict, Any, Optional
+from typing import Any
 
-import pandas as pd
 import yfinance as yf
 
 logger = logging.getLogger(__name__)
 
-ASSETS = {"GOLD": "XAUUSD", "SPY": "SPY", "NASDAQ": "^IXIC"}
+ASSETS = {"GOLD": "GC=F", "SPY": "SPY", "NASDAQ": "^IXIC"}
 MIN_REASONABLE_PRICE = 0.01
 MAX_REASONABLE_DAILY_CHANGE = 20.0
 
 
-def _configured_assets() -> Dict[str, str]:
+def _configured_assets() -> dict[str, str]:
     raw = os.getenv("MARKETPULSE_ASSETS", "").strip()
     if not raw:
         return ASSETS
@@ -41,7 +40,7 @@ def _is_market_open() -> bool:
     return True
 
 
-def _get_current_price(ticker: yf.Ticker) -> Optional[float]:
+def _get_current_price(ticker: yf.Ticker) -> float | None:
     try:
         try:
             fi = ticker.fast_info
@@ -58,7 +57,7 @@ def _get_current_price(ticker: yf.Ticker) -> Optional[float]:
     return None
 
 
-def get_prices() -> Dict[str, Any]:
+def get_prices() -> dict[str, Any]:
     data = {}
     for name, ticker_symbol in _configured_assets().items():
         try:

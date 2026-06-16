@@ -9,7 +9,6 @@ import logging
 import re
 import urllib.request
 from collections import Counter
-from typing import List, Tuple
 
 logger = logging.getLogger(__name__)
 
@@ -33,7 +32,7 @@ _NOISE = {
 }
 
 
-def _fetch_posts(subreddit: str) -> List[str]:
+def _fetch_posts(subreddit: str) -> list[str]:
     url = f"https://old.reddit.com/r/{subreddit}/hot.json?limit={MAX_POSTS}"
     req = urllib.request.Request(url, headers={"User-Agent": "MarketPulse/1.0"})
     try:
@@ -44,7 +43,7 @@ def _fetch_posts(subreddit: str) -> List[str]:
         return []
 
 
-def _count_tickers(texts: List[str]) -> Counter:
+def _count_tickers(texts: list[str]) -> Counter:
     c = Counter()
     for text in texts:
         for word in _TICKER_RE.findall(text):
@@ -53,7 +52,7 @@ def _count_tickers(texts: List[str]) -> Counter:
     return c
 
 
-def get_trending_tickers(min_mentions: int = 3) -> List[Tuple[str, int]]:
+def get_trending_tickers(min_mentions: int = 3) -> list[tuple[str, int]]:
     titles = []
     for sub in SUBREDDITS:
         titles.extend(_fetch_posts(sub))

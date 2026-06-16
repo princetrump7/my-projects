@@ -2,17 +2,14 @@
 
 import argparse
 import logging
-import sys
 
 from dotenv import load_dotenv
-from brain import morning_brief, evening_recap
+
+from brain import evening_recap, morning_brief
 from market import get_prices
 from news import get_news
-from sentiment import analyze_sentiment
 from notifier import send_alert
-
-if hasattr(sys.stdout, "reconfigure"):
-    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+from sentiment import analyze_sentiment
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s | %(levelname)-8s | %(name)s | %(message)s")
 logger = logging.getLogger("scheduled")

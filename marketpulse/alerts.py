@@ -5,7 +5,7 @@ Alerts engine — per-user alert scanning and notification delivery.
 from __future__ import annotations
 
 import logging
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from db import get_alerts, mark_alert_fired
 from insider import get_insider_trades
@@ -23,13 +23,13 @@ ALERT_TYPES = {
 SIGNAL_MAP = {"volume_spike": "VOLUME_SPIKE", "breakout": "BREAKOUT", "rsi_oversold": "RSI_OVERSOLD"}
 
 
-def scan_and_notify(context: Any = None) -> List[str]:
+def scan_and_notify(context: Any = None) -> list[str]:
     sent = []
     alerts = get_alerts()
     if not alerts:
         return sent
 
-    ticker_alerts: Dict[str, List[Dict]] = {}
+    ticker_alerts: dict[str, list[dict]] = {}
     for a in alerts:
         ticker_alerts.setdefault(a["ticker"], []).append(a)
 
@@ -52,7 +52,7 @@ def scan_and_notify(context: Any = None) -> List[str]:
     return sent
 
 
-def _check(alert: Dict, insider_trades: List[Dict], signals: List[Dict]) -> Optional[str]:
+def _check(alert: dict, insider_trades: list[dict], signals: list[dict]) -> str | None:
     t = alert["ticker"].upper()
     st = alert["signal_type"]
     if st == "insider":

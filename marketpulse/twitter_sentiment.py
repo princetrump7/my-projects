@@ -7,27 +7,27 @@ from __future__ import annotations
 
 import logging
 import os
-from typing import Dict, List, Optional, Tuple
 
 import requests
 
-from brain import _ask as _gemini_ask
+from ai import generate as _ai_generate
+from sentiment import parse_sentiment_scores
 
 logger = logging.getLogger(__name__)
 
 _TWITTER_API = "https://api.twitter.com/2"
 
 
-def _headers() -> Optional[Dict[str, str]]:
+def _headers() -> dict[str, str] | None:
     token = os.getenv("TWITTER_BEARER_TOKEN")
     return {"Authorization": f"Bearer {token}"} if token else None
 
 
-def _is_configured() -> bool:
+def is_configured() -> bool:
     return bool(os.getenv("TWITTER_BEARER_TOKEN"))
 
 
-def search_tweets(query: str, max_results: int = 20) -> List[Dict]:
+def search_tweets(query: str, max_results: int = 20) -> list[dict]:
     h = _headers()
     if not h:
         return []
@@ -42,8 +42,8 @@ def search_tweets(query: str, max_results: int = 20) -> List[Dict]:
         return []
 
 
-def analyze_twitter_sentiment(ticker: str) -> Tuple[Optional[Dict[str, float]], str]:
-    if not _is_configured():
+def analyze_twitter_sentiment(ticker: str) -> tuple[dict[str, float] | None, str]:
+    if not is_configured():
         return None, "⚠️ Twitter/X sentiment requires a <b>TWITTER_BEARER_TOKEN</b>. Set it in .env."
 
     tweets = search_tweets(f"${ticker} lang:en -is:retweet", 20)
@@ -51,7 +51,7 @@ def analyze_twitter_sentiment(ticker: str) -> Tuple[Optional[Dict[str, float]], 
         return None, f"😶 No recent tweets for <b>{ticker}</b>."
 
     tweet_block = "\n".join(f'- "{t["text"][:280]}"' for t in tweets[:15])
-    text = _gemini_ask(f"""Analyze Twitter/X sentiment for {ticker} based on these tweets:
+    text = _ai_generate(f"""Analyze Twitter/X sentiment for {ticker} based on these tweets:
 
 {tweet_block}
 
@@ -64,21 +64,5 @@ Bearish signals:
 Key narrative:
 Notable:""")
 
-    score = 50.0
-    for line in text.lower().split("\n"):
-        if "score:" in line:
-            try: score = max(0, min(100, float(line.split(":")[1].strip())))
-            except: pass
-            break
-    st = text.lower()
-    if "bullish" in st and "bearish" not in (st.split("sentiment:")[-1][:20] if "sentiment:" in st else ""):
-        bc, bbc = score / 100.0, (100 - score) / 200.0
-    elif "bearish" in st:
-        bbc, bc = (score / 100.0 if score > 50 else (100 - score) / 100.0), (100 - score) / 200.0
-    else:
-        bc = bbc = 0.3
-    return {"bullish": round(bc, 2), "bearish": round(bbc, 2), "neutral": round(max(0.0, 1.0 - bc - bbc), 2), "score": score}, text
-
-
-def is_configured() -> bool:
-    return _is_configured()
+    scores = parse_sentiment_scores(text)
+    return scores, text

@@ -10,8 +10,8 @@ import os
 import urllib.parse
 import urllib.request
 import xml.etree.ElementTree as ET
-from datetime import datetime, timedelta, timezone
-from typing import Any, Dict, List, Optional
+from datetime import UTC, datetime, timedelta
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -23,7 +23,7 @@ _BUY_CODES = {"P"}
 _SELL_CODES = {"S"}
 
 
-def _get(url: str) -> Optional[str]:
+def _get(url: str) -> str | None:
     try:
         req = urllib.request.Request(url, headers=_HEADERS)
         with urllib.request.urlopen(req, timeout=12) as r:
@@ -33,8 +33,8 @@ def _get(url: str) -> Optional[str]:
         return None
 
 
-def _recent_form4_ids(days_back: int = 3, limit: int = 40) -> List[Dict]:
-    today = datetime.now(timezone.utc).date()
+def _recent_form4_ids(days_back: int = 3, limit: int = 40) -> list[dict]:
+    today = datetime.now(UTC).date()
     start = today - timedelta(days=days_back)
     params = urllib.parse.urlencode({"q": "", "forms": "4", "dateRange": "custom", "startdt": start.isoformat(), "enddt": today.isoformat()})
     body = _get(f"{_EFTS_URL}?{params}")
@@ -46,7 +46,7 @@ def _recent_form4_ids(days_back: int = 3, limit: int = 40) -> List[Dict]:
         return []
 
 
-def _xml_url_from_hit(hit: Dict) -> Optional[str]:
+def _xml_url_from_hit(hit: dict) -> str | None:
     hit_id = hit.get("_id", "")
     ciks = hit.get("_source", {}).get("ciks", [])
     if ":" not in hit_id or not ciks:
@@ -56,7 +56,7 @@ def _xml_url_from_hit(hit: Dict) -> Optional[str]:
     return f"{_ARCHIVE_BASE}/{cik}/{acc_raw.replace('-', '')}/{filename}"
 
 
-def _parse_form4(xml_text: str) -> Optional[Dict[str, Any]]:
+def _parse_form4(xml_text: str) -> dict[str, Any] | None:
     try:
         root = ET.fromstring(xml_text)
     except ET.ParseError:
@@ -93,7 +93,7 @@ def _parse_form4(xml_text: str) -> Optional[Dict[str, Any]]:
     return best
 
 
-def get_insider_trades(limit: int = 6) -> List[Dict[str, Any]]:
+def get_insider_trades(limit: int = 6) -> list[dict[str, Any]]:
     hits = _recent_form4_ids(days_back=3, limit=limit * 5)
     results = []
     for hit in hits:

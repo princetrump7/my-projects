@@ -6,22 +6,30 @@ Uses the unified provider layer (ai.py) — swap backends via env vars.
 from __future__ import annotations
 
 import logging
-from typing import Any, Dict, List
+from typing import Any
 
 from ai import generate as _ai_generate
 
 logger = logging.getLogger(__name__)
 
 
+RETRY_LIMIT = 2
+
+
 def _ask(prompt: str) -> str:
-    try:
-        return _ai_generate(prompt)
-    except Exception as exc:
-        logger.error("AI call failed: %s", exc)
-        return "⚠️ AI analysis temporarily unavailable."
+    for attempt in range(RETRY_LIMIT + 1):
+        try:
+            return _ai_generate(prompt)
+        except Exception as exc:
+            logger.warning("AI call attempt %d/%d failed: %s", attempt + 1, RETRY_LIMIT + 1, exc)
+            if attempt < RETRY_LIMIT:
+                import time
+                time.sleep(1)
+    logger.error("AI call failed after %d attempts", RETRY_LIMIT + 1)
+    return "⚠️ AI analysis temporarily unavailable. Try again in a moment."
 
 
-def why_did_it_move(ticker: str, change: float, headlines: List[str]) -> str:
+def why_did_it_move(ticker: str, change: float, headlines: list[str]) -> str:
     news_block = "\n".join(f"- {h}" for h in headlines[:8]) if headlines else "- No specific news found."
     return _ask(f"""You are MarketPulse, a sharp market intelligence engine.
 
@@ -44,7 +52,7 @@ Watch next: [one specific catalyst or level to monitor]
 Rules: under 150 words, direct, no fluff, no disclaimers.""")
 
 
-def morning_brief(prices: Dict[str, Any], headlines: List[str], sentiment: str) -> str:
+def morning_brief(prices: dict[str, Any], headlines: list[str], sentiment: str) -> str:
     price_lines = "\n".join(f"- {n}: ${i['price']:,.2f} ({i['change']:+.2f}%)" for n, i in prices.items())
     top_news = "\n".join(f"- {h}" for h in headlines[:5])
     return _ask(f"""You are MarketPulse. Generate a punchy morning alpha brief.
@@ -70,7 +78,7 @@ Use this EXACT HTML format:
 Under 120 words. Traders are busy.""")
 
 
-def evening_recap(prices: Dict[str, Any], headlines: List[str]) -> str:
+def evening_recap(prices: dict[str, Any], headlines: list[str]) -> str:
     price_lines = "\n".join(f"- {n}: ${i['price']:,.2f} ({i['change']:+.2f}%)" for n, i in prices.items())
     top_news = "\n".join(f"- {h}" for h in headlines[:5])
     return _ask(f"""You are MarketPulse. Generate a brief end-of-day recap.
@@ -91,7 +99,7 @@ Use this EXACT HTML format:
 Under 100 words. Direct.""")
 
 
-def analyze_trending_tickers(tickers: List[tuple]) -> str:
+def analyze_trending_tickers(tickers: list[tuple]) -> str:
     lines = "\n".join(f"- {t}: {c} mentions" for t, c in tickers[:10])
     return _ask(f"""You are MarketPulse. These tickers are trending on Reddit right now:
 
@@ -106,12 +114,11 @@ Format (HTML):
 Each line under 15 words. Total under 80 words.""")
 
 
-def format_insider_brief(trades: List[Dict[str, Any]]) -> str:
+def format_insider_brief(trades: list[dict[str, Any]]) -> str:
     if not trades:
         return "No significant insider transactions found in recent filings."
     trade_lines = []
     for t in trades[:6]:
-        sign = "+" if t["type"] == "BUY" else "-"
         trade_lines.append(f"- {t['ticker']} ({t['company']}): {t['role']} {t['type']} {t['shares']:,} shares @ ${t['price']:.2f} = ${t['value']:,.0f}")
     block = "\n".join(trade_lines)
     return _ask(f"""You are MarketPulse. Format these recent SEC insider trades for Telegram traders.
@@ -131,7 +138,7 @@ Then add:
 Rules: bold tickers, under 150 words total, flag buys as potentially bullish.""")
 
 
-def explain_signals(signals: List[Dict[str, Any]]) -> str:
+def explain_signals(signals: list[dict[str, Any]]) -> str:
     if not signals:
         return "No high-confidence signals detected in the current scan."
     sig_lines = "\n".join(f"- {s['ticker']}: {s['label']} | {s['detail']} | price ${s['price']:.2f} | confidence {s['confidence']}%" for s in signals[:6])
@@ -151,7 +158,7 @@ Then:
 Rules: under 160 words, actionable language, no fluff.""")
 
 
-def translate_screener_query(query: str) -> Dict[str, Any]:
+def translate_screener_query(query: str) -> dict[str, Any]:
     import json
     prompt = f"""You are MarketPulse. A user wants to screen stocks.
 User query: "{query}"
@@ -175,7 +182,7 @@ Output ONLY valid JSON. Nothing else. If a parameter isn't mentioned, omit it.
         return {}
 
 
-def format_smartmoney_brief(filings: List[Dict[str, Any]]) -> str:
+def format_smartmoney_brief(filings: list[dict[str, Any]]) -> str:
     if not filings:
         return "No recent major smart money (13F) filings detected."
     lines = "\n".join(f"- {f['investor']} filed {f['form']} on {f['date']} (URL: {f['url']})" for f in filings[:5])
@@ -193,7 +200,7 @@ For each filing:
 Rules: under 120 words total, direct, no fluff. Provide context on the investor.""")
 
 
-def bull_bear_arguments(ticker: str, price: float, change: float, headlines: List[str], insider_trades: List[Dict[str, Any]], signals: List[Dict[str, Any]]) -> str:
+def bull_bear_arguments(ticker: str, price: float, change: float, headlines: list[str], insider_trades: list[dict[str, Any]], signals: list[dict[str, Any]]) -> str:
     news_block = "\n".join(f"- {h}" for h in headlines[:8]) if headlines else "- No recent news."
     insider_block = "\n".join(f"- {t['ticker']}: {t['role']} {'bought' if t['type']=='BUY' else 'sold'} ${t['value']:,.0f} worth" for t in insider_trades[:3]) if insider_trades else "- No recent insider activity."
     signal_map = {}
@@ -230,3 +237,63 @@ Format a balanced bull vs bear summary in this EXACT format:
 <b>Edge:</b> [1-sentence verdict based on weight of evidence]
 
 Rules: under 140 words, balanced, evidence-based.""")
+
+
+# ---------------------------------------------------------------------------
+# v2.0 Flagship prompts
+# ---------------------------------------------------------------------------
+
+
+def format_pulse(ticker: str, score: int, sentiment: str, momentum: str,
+                 inst_activity: str, news_impact: str, conclusion: str,
+                 risks: list[str], buy_zone: str, resistance: str, stop: str) -> str:
+    risk_lines = "\n".join(f"• {r}" for r in risks)
+    return f"""<b>🧠 Market Pulse — {ticker}</b>
+
+<b>Overall Score:</b> {score}/100
+<b>Sentiment:</b> {sentiment}
+<b>Momentum:</b> {momentum}
+<b>Institutional Activity:</b> {inst_activity}
+<b>News Impact:</b> {news_impact}
+
+<b>AI Conclusion:</b>
+{conclusion}
+
+<b>Key Risks:</b>
+{risk_lines}
+
+<b>Action Zones:</b>
+Buy Zone: {buy_zone}
+Resistance: {resistance}
+Stop Loss: {stop}"""
+
+
+def format_radar(picks: list[dict[str, str]]) -> str:
+    lines = ["<b>🛰️ Opportunity Radar</b>\n"]
+    for p in picks:
+        lines.append(f"<b>{p['ticker']}</b> — Conviction {p['confidence']}%")
+        for factor in p.get("factors", []):
+            lines.append(f"• {factor}")
+        lines.append("")
+    if picks:
+        best = picks[0]
+        lines.append(f"<b>AI Pick:</b> {best['ticker']} — strongest signal across combined factors.")
+    return "\n".join(lines).strip()
+
+
+def format_battle(ta: str, tb: str, growth_winner: str, val_winner: str,
+                  inst_winner: str, mom_winner: str, overall: str, confidence: int,
+                  take: str) -> str:
+    return f"""<b>⚔️ Stock Battle</b>
+
+<b>{ta}</b> vs <b>{tb}</b>
+
+<b>Growth:</b> Winner → {growth_winner}
+<b>Valuation:</b> Winner → {val_winner}
+<b>Institutional:</b> Winner → {inst_winner}
+<b>Momentum:</b> Winner → {mom_winner}
+
+<b>🏆 Overall Winner: {overall}</b>
+<b>Confidence: {confidence}%</b>
+
+<b>AI Take:</b> {take}"""

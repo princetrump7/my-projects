@@ -5,14 +5,43 @@ AI sentiment analysis engine using the unified AI provider layer.
 from __future__ import annotations
 
 import logging
-from typing import Dict, List, Tuple
 
 from ai import generate as _ai_generate
 
 logger = logging.getLogger(__name__)
 
 
-def analyze_sentiment(news_list: List[str]) -> str:
+def parse_sentiment_scores(text: str) -> dict[str, float]:
+    score = 50.0
+    for line in text.lower().split("\n"):
+        if "score:" in line:
+            try:
+                score = float(line.split(":")[1].strip())
+                score = max(0.0, min(100.0, score))
+            except (ValueError, IndexError):
+                pass
+            break
+
+    st = text.lower()
+    sentiment_section = st.split("sentiment:")[-1][:20] if "sentiment:" in st else ""
+
+    if "bullish" in st and "bearish" not in sentiment_section:
+        bc, bbc = score / 100.0, (100 - score) / 200.0
+    elif "bearish" in st:
+        bbc = score / 100.0 if score > 50 else (100 - score) / 100.0
+        bc = (100 - score) / 200.0
+    else:
+        bc = bbc = 0.3
+
+    return {
+        "bullish": round(bc, 2),
+        "bearish": round(bbc, 2),
+        "neutral": round(max(0.0, 1.0 - bc - bbc), 2),
+        "score": score,
+    }
+
+
+def analyze_sentiment(news_list: list[str]) -> str:
     if not news_list:
         return "No headlines to analyze."
     headlines_text = "\n".join(f"- {h}" for h in news_list)
@@ -36,7 +65,7 @@ Headlines:
         return "Sentiment analysis failed due to an error."
 
 
-def analyze_ticker_sentiment(ticker: str, headlines: List[str], price_change: float = 0.0) -> Tuple[Dict[str, float], str]:
+def analyze_ticker_sentiment(ticker: str, headlines: list[str], price_change: float = 0.0) -> tuple[dict[str, float], str]:
     news_block = "\n".join(f"- {h}" for h in headlines[:12]) if headlines else "- No recent news."
     price_ctx = f"{price_change:+.2f}%" if price_change else "N/A"
     prompt = f"""You are MarketPulse, a sharp market sentiment analyst.
@@ -56,23 +85,7 @@ Watch: one specific level, event, or catalyst
 """
     try:
         text = _ai_generate(prompt)
-        score = 50.0
-        for line in text.lower().split("\n"):
-            if "score:" in line:
-                try:
-                    score = float(line.split(":")[1].strip())
-                    score = max(0.0, min(100.0, score))
-                except (ValueError, IndexError):
-                    pass
-                break
-        st = text.lower()
-        if "bullish" in st and "bearish" not in (st.split("sentiment:")[-1][:20] if "sentiment:" in st else ""):
-            bc, bbc = score / 100.0, (100 - score) / 200.0
-        elif "bearish" in st:
-            bbc, bc = (score / 100.0 if score > 50 else (100 - score) / 100.0), (100 - score) / 200.0
-        else:
-            bc = bbc = 0.3
-        scores = {"bullish": round(bc, 2), "bearish": round(bbc, 2), "neutral": round(max(0.0, 1.0 - bc - bbc), 2), "score": score}
+        scores = parse_sentiment_scores(text)
         return scores, text
     except Exception as exc:
         logger.error("Ticker sentiment failed for %s: %s", ticker, exc)

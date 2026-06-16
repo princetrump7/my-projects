@@ -2,23 +2,25 @@
 MarketPulse — entry point.
 """
 
-import sys
-if hasattr(sys.stdout, "reconfigure"):
-    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
-    sys.stderr.reconfigure(encoding="utf-8", errors="replace")
-
 import logging
 import os
 import runpy
+import sys
 
 from dotenv import load_dotenv
+
 load_dotenv()
+
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+    sys.stderr.reconfigure(encoding="utf-8", errors="replace")
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s | %(levelname)-8s | %(name)s | %(message)s")
 logger = logging.getLogger("marketpulse")
 
 REQUIRED = ["TELEGRAM_BOT_TOKEN", "TELEGRAM_CHAT_ID"]
 AI_KEYS = ["GOOGLE_API_KEY", "OPENROUTER_API_KEY", "OPENCODE_API_KEY"]
+
 
 def _validate_env():
     missing = [v for v in REQUIRED if not os.getenv(v)]
@@ -28,6 +30,7 @@ def _validate_env():
     if not any(os.getenv(k) for k in AI_KEYS):
         logger.error("No AI provider configured. Set one of: %s", ", ".join(AI_KEYS))
         sys.exit(1)
+
 
 if __name__ == "__main__":
     _validate_env()

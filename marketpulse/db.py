@@ -7,8 +7,8 @@ from __future__ import annotations
 import logging
 import os
 import sqlite3
+from collections.abc import Generator
 from contextlib import contextmanager
-from typing import Generator, List
 
 logger = logging.getLogger(__name__)
 
@@ -81,7 +81,7 @@ def init_db() -> None:
 # Watchlist
 # ---------------------------------------------------------------------------
 
-def get_watchlist(user_id: int) -> List[str]:
+def get_watchlist(user_id: int) -> list[str]:
     with _conn() as con:
         rows = con.execute("SELECT ticker FROM watchlist WHERE user_id = ? ORDER BY added_at", (user_id,)).fetchall()
     return [r["ticker"].upper() for r in rows]

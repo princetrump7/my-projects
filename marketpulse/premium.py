@@ -1,30 +1,79 @@
 """
-Premium tier system — feature gating, tier checks, and donation info.
+Premium tier system — Free / Pro ($15/mo) / Elite ($39/mo) with feature gating.
 """
 
 from __future__ import annotations
 
 import os
 
-from db import get_user_tier, is_premium, set_user_tier
+from db import get_user_tier
 
-WATCHLIST_LIMITS = {"free": 10, "premium": 100, "patron": 100}
-PREMIUM_FEATURES = ["insiders_90day", "real_time_alerts", "unlimited_watchlist"]
+TIER_DEFS = {
+    "free": {"watchlist_limit": 10, "label": "🟢 Free", "price": "$0"},
+    "pro": {"watchlist_limit": 100, "label": "🔵 Pro", "price": "$15/mo"},
+    "elite": {"watchlist_limit": 250, "label": "🔴 Elite", "price": "$39/mo"},
+    "patron": {"watchlist_limit": 250, "label": "🟣 Patron", "price": "donation"},
+}
+
+ELITE_FEATURES = ["portfolio_analysis", "ai_trade_journal", "early_catalyst", "priority_ai"]
+PRO_FEATURES = ["real_time_alerts", "insider_alpha", "catalyst_scanner", "radar", "conviction_engine", "battle"] + ELITE_FEATURES
+
 DONATION_URLS = {"buymeacoffee": os.getenv("BUYMEACOFFEE_URL"), "github_sponsors": os.getenv("GITHUB_SPONSORS_URL")}
 
 
+def _tier_rank(tier: str) -> int:
+    return {"elite": 3, "patron": 3, "pro": 2, "free": 1}.get(tier, 1)
+
+
 def get_watchlist_limit(user_id: int) -> int:
-    return WATCHLIST_LIMITS.get(get_user_tier(user_id), 10)
+    tier = get_user_tier(user_id)
+    return TIER_DEFS.get(tier, TIER_DEFS["free"])["watchlist_limit"]
 
 
 def has_feature(user_id: int, feature: str) -> bool:
-    return True if is_premium(user_id) else feature not in PREMIUM_FEATURES
+    tier = get_user_tier(user_id)
+    rank = _tier_rank(tier)
+    if feature in PRO_FEATURES and rank >= 2:
+        return True
+    if feature in ELITE_FEATURES and rank >= 3:
+        return True
+    return False
 
 
 def upgrade_message(user_id: int) -> str:
-    return ("🔒 <b>Premium Feature</b>\n\nThis requires <b>MarketPulse Premium</b>.\n\n"
-            "Premium unlocks:\n• 90-day insider lookback\n• Real-time signal alerts\n• Unlimited watchlist\n\n"
-            "Support via donation: /donate\n<i>Already a patron? /redeem CODE</i>")
+    return (
+        "🔒 <b>Premium Feature</b>\n\n"
+        "This requires <b>MarketPulse Pro</b> or <b>Elite</b>.\n\n"
+        "<b>Pro</b> — $15/mo\n"
+        "• Real-time alerts\n"
+        "• Insider Alpha interpretation\n"
+        "• Catalyst scanner\n"
+        "• Opportunity Radar\n"
+        "• Conviction Engine\n"
+        "• Stock Battles\n\n"
+        "<b>Elite</b> — $39/mo\n"
+        "• Everything in Pro\n"
+        "• Portfolio analysis\n"
+        "• AI trade journal\n"
+        "• Early catalyst detection\n"
+        "• Priority AI processing\n"
+        "• 250-ticker watchlist\n\n"
+        "Use /premium to learn more.\n"
+        "<i>Already a patron? /redeem CODE</i>"
+    )
+
+
+def tier_info() -> str:
+    return (
+        "<b>⚡ MarketPulse Tiers</b>\n\n"
+        "🟢 <b>Free</b> — $0\n"
+        "Pulse score, basic setups, news, /why, /story\n\n"
+        "🔵 <b>Pro</b> — $15/mo\n"
+        "Real-time alerts, Insider Alpha, Catalyst scanner, Radar, /battle\n\n"
+        "🔴 <b>Elite</b> — $39/mo\n"
+        "Unlimited alerts, portfolio analysis, AI trade journal, early catalysts\n\n"
+        "Use /donate to support and get access."
+    )
 
 
 def donation_links() -> str:

@@ -9,8 +9,8 @@ import logging
 import os
 import urllib.parse
 import urllib.request
-from datetime import datetime, timedelta, timezone
-from typing import Any, Dict, List
+from datetime import UTC, datetime, timedelta
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -36,8 +36,8 @@ def _get(url: str) -> str | None:
         return None
 
 
-def get_recent_13f(days_back: int = 90) -> List[Dict[str, Any]]:
-    today = datetime.now(timezone.utc).date()
+def get_recent_13f(days_back: int = 90) -> list[dict[str, Any]]:
+    today = datetime.now(UTC).date()
     start = today - timedelta(days=days_back)
     ciks_str = ",".join(f'"{c}"' for c in SMART_MONEY_CIKS)
     params = urllib.parse.urlencode({"q": f"ciks:({ciks_str})", "forms": "13F-HR", "dateRange": "custom", "startdt": start.isoformat(), "enddt": today.isoformat()})

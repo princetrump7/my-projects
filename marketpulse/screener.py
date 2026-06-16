@@ -5,16 +5,16 @@ AI Natural Language Screener using yfinance.
 from __future__ import annotations
 
 import logging
-from typing import List, Dict, Any
+from typing import Any
 
 import yfinance as yf
 
-from universe import LIQUID_100
 from brain import translate_screener_query
+from universe import LIQUID_100
 
 logger = logging.getLogger(__name__)
 
-def screen_stocks(nl_query: str) -> List[Dict[str, Any]]:
+def screen_stocks(nl_query: str) -> list[dict[str, Any]]:
     criteria = translate_screener_query(nl_query)
     if not criteria:
         return []

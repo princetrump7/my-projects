@@ -4,7 +4,6 @@ Financial news scraper via RSS feeds — expanded to 7 sources + ticker extracti
 
 import logging
 import re
-from typing import List, Tuple
 
 import feedparser
 
@@ -33,7 +32,7 @@ _COMMON_WORDS = {
 }
 
 
-def get_news() -> List[str]:
+def get_news() -> list[str]:
     headlines = []
     for url in RSS_FEEDS:
         try:
@@ -55,11 +54,11 @@ def get_news() -> List[str]:
     return deduped[:MAX_TOTAL]
 
 
-def _extract_tickers(headline: str) -> List[str]:
+def _extract_tickers(headline: str) -> list[str]:
     return [c for c in _TICKER_RE.findall(headline) if len(c) >= 2 and c not in _COMMON_WORDS]
 
 
-def get_news_by_ticker(ticker: str) -> Tuple[List[str], List[str]]:
+def get_news_by_ticker(ticker: str) -> tuple[list[str], list[str]]:
     all_news = get_news()
     tu = ticker.upper()
     filtered = [h for h in all_news if tu in _extract_tickers(h)]

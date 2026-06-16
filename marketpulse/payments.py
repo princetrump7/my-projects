@@ -7,7 +7,7 @@ from __future__ import annotations
 import json
 import logging
 import os
-from typing import Any, Optional, Tuple
+from typing import Any
 
 from db import set_user_tier
 
@@ -18,7 +18,7 @@ def _configured() -> bool:
     return bool(os.getenv("STRIPE_SECRET_KEY"))
 
 
-def _client() -> Optional[Any]:
+def _client() -> Any | None:
     key = os.getenv("STRIPE_SECRET_KEY")
     if not key:
         return None
@@ -31,14 +31,14 @@ def _client() -> Optional[Any]:
         return None
 
 
-def create_checkout_session(user_id: int, tier: str = "premium", success_url: str = "https://t.me/YourBot", cancel_url: str = "https://t.me/YourBot") -> Tuple[Optional[str], Optional[str]]:
-    if not _configured() or not _client():
+def create_checkout_session(user_id: int, tier: str = "premium", success_url: str = "https://t.me/YourBot", cancel_url: str = "https://t.me/YourBot") -> tuple[str | None, str | None]:
+    s = _client()
+    if not _configured() or not s:
         return None, "Stripe not configured. Use /donate."
     price_id = os.getenv(f"STRIPE_{tier.upper()}_PRICE_ID", "")
     if not price_id:
         return None, f"No price ID for tier '{tier}'."
     try:
-        s = _client()
         session = s.checkout.Session.create(
             mode="subscription" if tier == "premium" else "payment",
             line_items=[{"price": price_id, "quantity": 1}],
@@ -52,7 +52,7 @@ def create_checkout_session(user_id: int, tier: str = "premium", success_url: st
         return None, str(exc)
 
 
-def handle_webhook(payload: bytes, sig_header: str) -> Tuple[bool, str]:
+def handle_webhook(payload: bytes, sig_header: str) -> tuple[bool, str]:
     secret = os.getenv("STRIPE_WEBHOOK_SECRET")
     try:
         if secret:
