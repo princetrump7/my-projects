@@ -24,5 +24,11 @@ RUN pip install --no-cache-dir -e .
 # Copy the rest of the application code
 COPY . .
 
-# Command to run the bot
-CMD ["python", "main.py"]
+# Make entrypoint executable
+RUN chmod +x entrypoint.sh
+
+# Expose port for Hugging Face Spaces / cloud hosting
+EXPOSE 7860
+
+# Run both the bot and the web server
+CMD ["./entrypoint.sh"]
