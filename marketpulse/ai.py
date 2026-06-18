@@ -1,12 +1,12 @@
 """
-Unified AI provider layer — OpenRouter primary, Gemini fallback.
-No CLI agent fallback (opencode run is a coding agent, not a text generator).
+Unified AI provider layer — OpenRouter primary, Gemini fallback, OpenCode Zen last resort.
 """
 
 from __future__ import annotations
 
 import logging
 import os
+import subprocess
 import time
 
 import requests
@@ -89,9 +89,40 @@ def _generate_gemini(prompt: str) -> str | None:
         return None
 
 
+def _generate_opencode(prompt: str) -> str | None:
+    """Fallback: use opencode CLI with a free Zen model via subprocess."""
+    model = os.getenv("OPENCODE_MODEL", "opencode/deepseek-v4-flash-free")
+    logger.info("opencode fallback with model: %s", model)
+    try:
+        result = subprocess.run(
+            ["opencode", "run", prompt, "--model", model],
+            capture_output=True, text=True, timeout=90,
+        )
+        if result.returncode != 0:
+            logger.warning("opencode exited code %d: %s", result.returncode, result.stderr[:200])
+            return None
+        output = result.stdout.strip()
+        if output:
+            return output
+        return None
+    except FileNotFoundError:
+        logger.warning("opencode CLI not found, skipping fallback")
+        return None
+    except subprocess.TimeoutExpired:
+        logger.warning("opencode timed out after 90s")
+        return None
+    except Exception as exc:
+        logger.warning("opencode error: %s", exc)
+        return None
+
+
 def generate(prompt: str) -> str:
     p = current_provider()
     if p == "none":
+        logger.info("No API keys configured, trying opencode fallback...")
+        result = _generate_opencode(prompt)
+        if result:
+            return result
         return "⚠️ No AI provider configured."
 
     logger.info("AI provider: %s (model: %s)", p, _resolve_model())
@@ -104,9 +135,18 @@ def generate(prompt: str) -> str:
         result = _generate_gemini(prompt)
         if result:
             return result
+        logger.warning("Gemini failed, trying opencode fallback...")
+        result = _generate_opencode(prompt)
+        if result:
+            return result
         return "⚠️ AI is busy right now. Try again in a minute."
 
+    # Gemini primary
     result = _generate_gemini(prompt)
+    if result:
+        return result
+    logger.warning("Gemini failed, trying opencode fallback...")
+    result = _generate_opencode(prompt)
     if result:
         return result
     return "⚠️ AI analysis temporarily unavailable."

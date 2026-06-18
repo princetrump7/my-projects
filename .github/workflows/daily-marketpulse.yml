@@ -16,7 +16,7 @@ on:
 jobs:
   run-brief:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 15
     defaults:
       run:
         working-directory: marketpulse
@@ -30,13 +30,29 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+
+      - name: Setup Node.js (for opencode CLI)
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install opencode CLI
+        run: npm install -g opencode-ai
+
+      - name: Configure opencode auth
+        run: |
+          mkdir -p ~/.local/share/opencode
+          cat > ~/.local/share/opencode/auth.json << 'EOF'
+          {"providers":{"opencode-zen":{"apiKey":"${{ secrets.OPENCODE_ZEN_API_KEY }}"}}}
+          EOF
+
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
           cache: "pip"
           cache-dependency-path: marketpulse/requirements.txt
 
-      - name: Install dependencies
+      - name: Install Python dependencies
         run: python -m pip install -r requirements.txt
 
       - name: Determine brief type
