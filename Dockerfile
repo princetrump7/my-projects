@@ -13,16 +13,18 @@ WORKDIR /app
 RUN apt-get update && apt-get install -y --no-install-recommends \
     gcc \
     python3-dev \
+    curl \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy project files
-COPY pyproject.toml requirements.txt ./
+# Copy project files (now inside marketpulse/ subdirectory)
+COPY marketpulse/requirements.txt marketpulse/pyproject.toml ./
 
 # Install dependencies
-RUN pip install --no-cache-dir -e .
+RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy the rest of the application code
-COPY . .
+COPY marketpulse/ ./
+COPY entrypoint.sh .
 
 # Make entrypoint executable
 RUN chmod +x entrypoint.sh
