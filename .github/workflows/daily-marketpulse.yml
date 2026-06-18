@@ -27,6 +27,7 @@ jobs:
       OPENROUTER_MODEL: ${{ vars.OPENROUTER_MODEL || 'google/gemma-4-26b-a4b-it:free' }}
       TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
       TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+      OPENCODE_ZEN_API_KEY: ${{ secrets.OPENCODE_ZEN_API_KEY }}
 
     steps:
       - uses: actions/checkout@v4
@@ -42,9 +43,10 @@ jobs:
       - name: Configure opencode auth
         run: |
           mkdir -p ~/.local/share/opencode
-          cat > ~/.local/share/opencode/auth.json << 'EOF'
-          {"providers":{"opencode-zen":{"apiKey":"${{ secrets.OPENCODE_ZEN_API_KEY }}"}}}
+          cat > ~/.local/share/opencode/auth.json << EOF
+          {"opencode":{"type":"api","key":"${{ secrets.OPENCODE_ZEN_API_KEY }}"}}
           EOF
+          echo "auth.json created"
 
       - uses: actions/setup-python@v5
         with:

@@ -90,7 +90,7 @@ def _generate_gemini(prompt: str) -> str | None:
 
 
 def _generate_opencode(prompt: str) -> str | None:
-    """Fallback: use opencode CLI with a free Zen model via subprocess."""
+    """Fallback: use opencode CLI with a free model via subprocess."""
     model = os.getenv("OPENCODE_MODEL", "opencode/deepseek-v4-flash-free")
     logger.info("opencode fallback with model: %s", model)
     try:
@@ -98,12 +98,16 @@ def _generate_opencode(prompt: str) -> str | None:
             ["opencode", "run", prompt, "--model", model],
             capture_output=True, text=True, timeout=90,
         )
+        if result.stderr:
+            logger.info("opencode stderr: %s", result.stderr[:300])
         if result.returncode != 0:
-            logger.warning("opencode exited code %d: %s", result.returncode, result.stderr[:200])
+            logger.warning("opencode exited code %d (stderr: %s)", result.returncode, result.stderr[:200])
             return None
         output = result.stdout.strip()
         if output:
+            logger.info("opencode returned %d chars; first 100: %s", len(output), output[:100])
             return output
+        logger.warning("opencode returned empty stdout")
         return None
     except FileNotFoundError:
         logger.warning("opencode CLI not found, skipping fallback")
