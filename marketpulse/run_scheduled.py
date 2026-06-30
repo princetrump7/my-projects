@@ -2,6 +2,13 @@
 
 import argparse
 import logging
+import os
+import sys
+
+# Ensure imports resolve from this script's directory (handles GHA running from parent repo)
+_script_dir = os.path.dirname(os.path.abspath(__file__))
+if _script_dir not in sys.path:
+    sys.path.insert(0, _script_dir)
 
 from dotenv import load_dotenv
 
