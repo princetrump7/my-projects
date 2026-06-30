@@ -43,6 +43,10 @@ from bot import (
     cmd_whales,
     cmd_battle,
     cmd_story,
+    cmd_insights,
+    cmd_hf,
+    cmd_conviction,
+    cmd_topideas,
 )
 from telegram.ext import CommandHandler
 
@@ -93,6 +97,10 @@ def _build_app() -> Application:
     ptb.add_handler(CommandHandler("whales", cmd_whales))
     ptb.add_handler(CommandHandler("battle", cmd_battle))
     ptb.add_handler(CommandHandler("story", cmd_story))
+    ptb.add_handler(CommandHandler("insights", cmd_insights))
+    ptb.add_handler(CommandHandler("hf", cmd_hf))
+    ptb.add_handler(CommandHandler("conviction", cmd_conviction))
+    ptb.add_handler(CommandHandler("topideas", cmd_topideas))
     return ptb
 
 

@@ -1,5 +1,9 @@
 """
 MarketPulse — entry point.
+
+Auto-selects mode:
+  - WEBHOOK mode (production) if WEBHOOK_URL or RENDER_EXTERNAL_URL is set
+  - POLLING mode (development) otherwise
 """
 
 import logging
@@ -32,10 +36,32 @@ def _validate_env():
         sys.exit(1)
 
 
+def _is_webhook_mode() -> bool:
+    """Return True if we should run in webhook (production) mode."""
+    return bool(os.getenv("WEBHOOK_URL") or os.getenv("RENDER_EXTERNAL_URL"))
+
+
+def run_polling() -> None:
+    """Development mode with long-polling."""
+    from bot import run_bot
+
+    logger.info("Starting in POLLING mode (development)")
+    run_bot()
+
+
+def run_webhook() -> None:
+    """Production mode with FastAPI + webhook."""
+    from webhook import run
+
+    logger.info("Starting in WEBHOOK mode (production)")
+    run()
+
+
 if __name__ == "__main__":
     _validate_env()
     if os.getenv("CI_ONE_SHOT", "false").lower() in {"1", "true", "yes"}:
         runpy.run_path(os.path.join(os.path.dirname(__file__), "test_cycle.py"), run_name="__main__")
+    elif _is_webhook_mode():
+        run_webhook()
     else:
-        from bot import run_bot
-        run_bot()
+        run_polling()
