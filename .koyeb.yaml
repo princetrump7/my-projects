@@ -1,8 +1,8 @@
 web:
   name: marketpulse-bot
   runtime: python
-  buildCommand: pip install -r requirements.txt
-  startCommand: python main.py
+  buildCommand: pip install -r marketpulse/requirements.txt
+  startCommand: cd marketpulse && python main.py
   healthCheck: false
   regions:
     - was
@@ -15,7 +15,5 @@ web:
       secret: GOOGLE_API_KEY
     - key: OPENROUTER_API_KEY
       secret: OPENROUTER_API_KEY
-    - key: GOOGLE_API_KEY
-      secret: GOOGLE_API_KEY
     - key: GEMINI_MODEL
       value: gemini-3.5-flash
