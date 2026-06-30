@@ -24,9 +24,11 @@ from brain import (
     explain_signals,
     format_insider_brief,
     format_smartmoney_brief,
+    hf_conviction_summary,
     morning_brief,
     why_did_it_move,
 )
+from hedge import conviction_rating, hedge_brief, portfolio_overview, top_conviction_picks
 from catalyst import catalyst as cmd_catalyst_fn
 from pulse import pulse as cmd_pulse_fn
 from radar import radar as cmd_radar_fn
@@ -50,6 +52,7 @@ from db import (
     remove_alert as db_remove_alert,
 )
 from earnings import summarize_earnings
+from insights import generate_insights
 from insider import get_insider_trades
 from market import get_prices
 from news import get_news, get_news_by_ticker
@@ -157,10 +160,14 @@ async def cmd_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         f"Welcome, <b>{name}</b>.\n\n"
         "You are connected to MarketPulse v2.0 — AI Market Intelligence.\n\n"
         "<b>⚡ Start Here</b>\n\n"
+        "/hf → Hedge Fund briefing (portfolio + conviction calls)\n"
+        "/conviction TICKER → Get a buy/hold/short call with levels\n"
+        "/topideas → Top 5 highest-conviction picks\n"
         "/pulse TICKER → Full AI pulse (flagship)\n"
         "/story → Today's market narrative\n"
         "/radar → Multi-factor opportunity scan\n\n"
         "<b>🧠 Intelligence</b>\n"
+        "/insights → Cross-module intelligence report\n"
         "/setups → Trade setups with entry/target/stop\n"
         "/bullbear TICKER → Bull vs Bear case\n"
         "/catalyst → Emerging catalyst detection\n"
@@ -469,6 +476,16 @@ async def cmd_story(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await _reply(update, f"Story failed: {exc}")
 
 
+async def cmd_insights(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await _reply(update, "Generating cross-module insights...")
+    try:
+        user_id = update.effective_user.id if update.effective_user else None
+        result = generate_insights(user_id=user_id)
+        await _reply(update, result)
+    except Exception as exc:
+        await _reply(update, f"Insights failed: {exc}")
+
+
 # ---------------------------------------------------------------------------
 
 async def cmd_sentiment(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -620,6 +637,83 @@ async def cmd_alert(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 # ---------------------------------------------------------------------------
+# Hedge Fund commands
+# ---------------------------------------------------------------------------
+
+from brain import hf_conviction_summary as _hf_summary
+
+async def cmd_hf(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Full hedge fund briefing — portfolio, top picks, risk overlay."""
+    await _reply(update, "Running hedge fund analysis...")
+    try:
+        from brain import hf_morning_brief as _hf_brief_fn
+        brief_data = hedge_brief()
+        prices = brief_data["prices"]
+        news = brief_data["news"]
+        picks = brief_data["top_picks"]
+        portfolio = brief_data["portfolio"]
+        from sentiment import analyze_sentiment
+        sentiment = analyze_sentiment(news) if news else "No news."
+        text = _hf_brief_fn(prices, news, sentiment, picks, portfolio)
+        await _reply(update, text)
+    except Exception as exc:
+        logger.exception("HF brief failed")
+        await _reply(update, f"HF analysis failed: {exc}")
+
+
+async def cmd_conviction(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Conviction call on a specific ticker with entry/target/stop."""
+    if not context.args:
+        await _reply(update, "Usage: /conviction TICKER\nExample: /conviction NVDA")
+        return
+    ticker = context.args[0].upper()
+    if not _TICKER_RE.match(ticker):
+        await _reply(update, f"Invalid ticker: {ticker}")
+        return
+    await _reply(update, f"Scoring {ticker}...")
+    try:
+        result = conviction_rating(ticker)
+        score = result["score"]
+        label = "🚀 Strong Buy" if score >= 9 else "✅ Buy" if score >= 7 else "👀 Watch" if score >= 5 else "⚠️ Avoid" if score >= 3 else "🔻 Short"
+        breakdown = "\n".join(f"  • {b}" for b in result.get("breakdown", []))
+        entry = result.get("entry", 0)
+        target = result.get("target", 0)
+        stop = result.get("stop", 0)
+        rr = result.get("rr", "N/A")
+        price = result.get("price", 0)
+        change = result.get("change", 0)
+        msg = (
+            f"<b>🏛️ Conviction Call — {ticker}</b>\n\n"
+            f"<b>{label}</b> — {score}/10\n"
+            f"Price: ${price:.2f} ({change:+.2f}%)\n\n"
+            f"<b>Action Zones:</b>\n"
+            f"  Entry: ${entry:.2f}\n"
+            f"  Target: ${target:.2f}\n"
+            f"  Stop: ${stop:.2f}\n"
+            f"  R:R: {rr}\n\n"
+            f"<b>Signal Breakdown:</b>\n"
+            f"{breakdown}"
+        )
+        await _reply(update, msg)
+    except Exception as exc:
+        await _reply(update, f"Conviction scoring failed: {exc}")
+
+
+async def cmd_topideas(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Top 5 highest-conviction ideas right now."""
+    await _reply(update, "Finding highest-conviction ideas...")
+    try:
+        picks = top_conviction_picks(limit=5)
+        if not picks:
+            await _reply(update, "No high-conviction ideas right now. Market may be in a low-signal zone.")
+            return
+        text = _hf_summary(picks)
+        await _reply(update, text)
+    except Exception as exc:
+        await _reply(update, f"Top ideas failed: {exc}")
+
+
+# ---------------------------------------------------------------------------
 # Scheduled jobs
 # ---------------------------------------------------------------------------
 
@@ -666,6 +760,10 @@ def build_app():
     app.add_handler(CommandHandler("whales", cmd_whales))
     app.add_handler(CommandHandler("battle", cmd_battle))
     app.add_handler(CommandHandler("story", cmd_story))
+    app.add_handler(CommandHandler("insights", cmd_insights))
+    app.add_handler(CommandHandler("hf", cmd_hf))
+    app.add_handler(CommandHandler("conviction", cmd_conviction))
+    app.add_handler(CommandHandler("topideas", cmd_topideas))
     return app
 
 

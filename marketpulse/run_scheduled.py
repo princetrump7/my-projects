@@ -1,4 +1,4 @@
-"""Script to execute scheduled briefs for GitHub Actions."""
+"""Script to execute scheduled hedge fund briefs for GitHub Actions."""
 
 import argparse
 import logging
@@ -12,25 +12,40 @@ if _script_dir not in sys.path:
 
 from dotenv import load_dotenv
 
-from brain import evening_recap, morning_brief
+from brain import hf_evening_recap, hf_morning_brief
+from hedge import hedge_brief, portfolio_overview
 from market import get_prices
 from news import get_news
 from notifier import send_alert
 from sentiment import analyze_sentiment
+from signals import scan_signals
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s | %(levelname)-8s | %(name)s | %(message)s")
 logger = logging.getLogger("scheduled")
 
+
 def do_morning():
+    """Hedge fund style morning brief — conviction calls, portfolio, risk overlay."""
     prices = get_prices()
     news = get_news()
     sentiment = analyze_sentiment(news) if news else "No news."
-    send_alert(morning_brief(prices, news, sentiment))
+    hf = hedge_brief()
+    top_picks = hf.get("top_picks", [])
+    portfolio = hf.get("portfolio", {})
+    text = hf_morning_brief(prices, news, sentiment, top_picks, portfolio)
+    send_alert(text)
+    logger.info("Morning hedge brief sent")
+
 
 def do_evening():
+    """Hedge fund style evening recap — P&L, closed trades, pre-market watch."""
     prices = get_prices()
     news = get_news()
-    send_alert(evening_recap(prices, news))
+    portfolio = portfolio_overview()
+    signals = scan_signals()
+    text = hf_evening_recap(prices, news, portfolio, signals)
+    send_alert(text)
+    logger.info("Evening hedge recap sent")
 
 if __name__ == "__main__":
     load_dotenv()
