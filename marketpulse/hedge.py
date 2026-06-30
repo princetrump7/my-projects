@@ -307,7 +307,7 @@ def portfolio_overview(universe: list[str] | None = None) -> dict[str, Any]:
         "win_rate": round(len(winners) / count * 100, 1) if count else 0,
         "best": best,
         "worst": worst,
-        "top_picks": sorted_pos[:limit(5)] if callable(limit) else sorted_pos[:5],
+        "top_picks": sorted_pos[:5],
         "spy_change": spy_change,
     }
 
