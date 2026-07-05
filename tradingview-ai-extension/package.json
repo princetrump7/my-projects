@@ -1,0 +1,19 @@
+{
+  "name": "tradingview-ai-extension",
+  "version": "1.0.0",
+  "private": true,
+  "description": "TradingView AI Copilot Chrome Extension",
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "build:minify": "node scripts/build.mjs --minify",
+    "build:watch": "node scripts/build.mjs --watch",
+    "icons": "node tools/generate-icons.js",
+    "backend": "cd backend && npm run dev",
+    "setup": "cd backend && npm install",
+    "dist": "node scripts/build.mjs --minify"
+  },
+  "devDependencies": {
+    "esbuild": "^0.24.0",
+    "sharp": "^0.33.0"
+  }
+}
