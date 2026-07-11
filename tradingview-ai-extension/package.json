@@ -1,19 +1,39 @@
 {
-  "name": "tradingview-ai-extension",
-  "version": "1.0.0",
+  "name": "tradingview-ai-copilot",
+  "version": "2.0.0",
   "private": true,
-  "description": "TradingView AI Copilot Chrome Extension",
+  "type": "module",
+  "description": "AI-powered TradingView chart analysis assistant — rebuilt with React + TypeScript",
   "scripts": {
-    "build": "node scripts/build.mjs",
-    "build:minify": "node scripts/build.mjs --minify",
-    "build:watch": "node scripts/build.mjs --watch",
-    "icons": "node tools/generate-icons.js",
-    "backend": "cd backend && npm run dev",
-    "setup": "cd backend && npm install",
-    "dist": "node scripts/build.mjs --minify"
+    "dev": "vite build --watch",
+    "build": "npm run build:extension && npm run build:backend",
+    "build:extension": "vite build",
+    "build:backend": "cd backend && npm run build",
+    "build:minify": "vite build --mode production",
+    "preview": "vite preview",
+    "lint": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "setup:backend": "cd backend && npm install"
+  },
+  "dependencies": {
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "zustand": "^4.5.2",
+    "@stripe/stripe-js": "^3.4.0"
   },
   "devDependencies": {
-    "esbuild": "^0.24.0",
-    "sharp": "^0.33.0"
+    "typescript": "^5.4.5",
+    "vite": "^5.3.1",
+    "@vitejs/plugin-react": "^4.3.1",
+    "tailwindcss": "^3.4.4",
+    "postcss": "^8.4.38",
+    "autoprefixer": "^10.4.19",
+    "@types/react": "^18.3.3",
+    "@types/react-dom": "^18.3.0",
+    "@types/chrome": "^0.0.260",
+    "vitest": "^1.6.0",
+    "@testing-library/react": "^15.0.7",
+    "jsdom": "^24.0.0"
   }
 }

@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "TradingView AI Copilot",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "description": "AI-powered TradingView chart analysis assistant — market structure intelligence inside your charts",
 
   "permissions": [
@@ -14,14 +14,14 @@
   ],
 
   "background": {
-    "service_worker": "src/background/serviceWorker.js",
+    "service_worker": "background.js",
     "type": "module"
   },
 
   "content_scripts": [
     {
       "matches": ["https://www.tradingview.com/*"],
-      "js": ["src/content/contentScript.js"],
+      "js": ["content.js"],
       "run_at": "document_idle"
     }
   ],
@@ -32,7 +32,7 @@
 
   "web_accessible_resources": [
     {
-      "resources": ["src/ui/*", "src/shared/*", "assets/*"],
+      "resources": ["assets/*"],
       "matches": ["https://www.tradingview.com/*"]
     }
   ],

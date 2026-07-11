@@ -1,0 +1,208 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ── Design System ───────────────────────────────────────────────── */
+
+:host {
+  --tv-bg: #131722;
+  --tv-surface: #1e222d;
+  --tv-surface-2: #2a2e39;
+  --tv-border: #363a45;
+  --tv-text: #d1d4dc;
+  --tv-text-secondary: #9598a1;
+  --tv-text-muted: #6a6d78;
+  --tv-blue: #2962ff;
+  --tv-blue-hover: #1a53f0;
+  --tv-green: #089981;
+  --tv-red: #f23645;
+  --tv-yellow: #f0a832;
+  --panel-width: 380px;
+}
+
+/* ── Base Reset ─────────────────────────────────────────────────── */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+/* ── Custom Scrollbar ────────────────────────────────────────────── */
+::-webkit-scrollbar {
+  width: 4px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--tv-border);
+  border-radius: 2px;
+}
+
+/* ── Buttons ──────────────────────────────────────────────────────── */
+.btn-primary {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 34px;
+  padding: 0 16px;
+  border-radius: 4px;
+  background: var(--tv-blue);
+  color: white;
+  font-size: 13px;
+  font-weight: 600;
+  border: none;
+  cursor: pointer;
+  transition: background 0.15s ease, transform 0.1s ease;
+  width: 100%;
+}
+.btn-primary:hover {
+  background: var(--tv-blue-hover);
+}
+.btn-primary:active {
+  transform: scale(0.98);
+}
+.btn-primary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btn-secondary {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 34px;
+  padding: 0 16px;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--tv-text);
+  font-size: 13px;
+  font-weight: 500;
+  border: 1px solid var(--tv-border);
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease;
+  width: 100%;
+}
+.btn-secondary:hover {
+  background: var(--tv-surface-2);
+  border-color: var(--tv-text-muted);
+}
+
+.btn-text {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 34px;
+  padding: 0 8px;
+  background: transparent;
+  color: var(--tv-text-secondary);
+  font-size: 12px;
+  border: none;
+  cursor: pointer;
+  transition: color 0.15s ease;
+  width: 100%;
+}
+.btn-text:hover {
+  color: var(--tv-text);
+}
+
+/* ── Utility Classes ─────────────────────────────────────────────── */
+
+/* Locked content blur — parent must have position: relative */
+.tv-locked-blur {
+  filter: blur(5px);
+  pointer-events: none;
+  user-select: none;
+}
+
+/* Premium badge colors per tier */
+.tv-badge-free {
+  background: var(--tv-text-muted);
+  color: white;
+}
+.tv-badge-starter {
+  background: var(--tv-blue);
+  color: white;
+}
+.tv-badge-pro {
+  background: var(--tv-yellow);
+  color: #000;
+}
+.tv-badge-elite {
+  background: var(--tv-green);
+  color: white;
+}
+
+/* Bias pills */
+.tv-bias-bullish {
+  color: var(--tv-green);
+  background: rgba(8, 153, 129, 0.15);
+}
+.tv-bias-bearish {
+  color: var(--tv-red);
+  background: rgba(242, 54, 69, 0.15);
+}
+.tv-bias-neutral {
+  color: var(--tv-yellow);
+  background: rgba(240, 168, 50, 0.15);
+}
+
+/* Score colors */
+.tv-score-high {
+  color: var(--tv-green);
+}
+.tv-score-medium {
+  color: var(--tv-yellow);
+}
+.tv-score-low {
+  color: var(--tv-red);
+}
+
+/* Usage bar */
+.tv-usage-bar {
+  height: 4px;
+  background: var(--tv-surface-2);
+  border-radius: 2px;
+  overflow: hidden;
+}
+.tv-usage-bar-fill {
+  height: 100%;
+  border-radius: 2px;
+  background: var(--tv-blue);
+  transition: width 0.3s ease;
+}
+
+/* ── Animations ──────────────────────────────────────────────────── */
+@keyframes tv-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.tv-spinner {
+  width: 28px;
+  height: 28px;
+  border: 3px solid var(--tv-border);
+  border-top-color: var(--tv-blue);
+  border-radius: 50%;
+  animation: tv-spin 0.7s linear infinite;
+}
+
+/* ── Reduced Motion ──────────────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* ── Responsive ──────────────────────────────────────────────────── */
+@media (max-width: 600px) {
+  :host {
+    --panel-width: 100vw;
+  }
+}
