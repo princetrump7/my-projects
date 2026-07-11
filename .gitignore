@@ -22,3 +22,5 @@ _write_*.py
 .DS_Store
 Thumbs.db
 marketpulse/
+tradingview-ai-extension/
+tradingview-ai-extension.old/
