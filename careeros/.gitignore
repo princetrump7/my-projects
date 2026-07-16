@@ -1,0 +1,65 @@
+# dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# testing
+coverage/
+
+# next.js
+.next/
+out/
+
+# production
+build/
+dist/
+
+# env files
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+.env.vercel
+
+# typescript
+*.tsbuildinfo
+next-env.d.ts
+
+# IDE / editor
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# vercel
+.vercel
+
+# supabase local dev
+supabase/.temp
+
+# wrangler (Cloudflare Workers)
+.wrangler
+
+# trigger.dev
+.trigger
+
+# python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.venv/
+venv/
+env/
+*.sqlite3
+*.sqlite
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# extension build artifacts (if any)
+extension/dist/

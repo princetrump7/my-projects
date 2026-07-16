@@ -1,0 +1,47 @@
+{
+  "manifest_version": 3,
+  "name": "CareerOS",
+  "version": "1.0.0",
+  "description": "AI career intelligence layer for LinkedIn — analyze profiles, optimize for jobs, get Career Truth insights.",
+  "permissions": ["storage", "sidePanel", "scripting"],
+  "host_permissions": [
+    "https://www.linkedin.com/*",
+    "http://localhost:3000/*",
+    "https://careeros-roan.vercel.app/*"
+  ],
+  "background": {
+    "service_worker": "background.js",
+    "type": "module"
+  },
+  "side_panel": {
+    "default_path": "sidebar.html"
+  },
+  "action": {
+    "default_title": "CareerOS — AI Career Intelligence",
+    "default_icon": {
+      "16": "icon-16.svg",
+      "48": "icon-48.svg",
+      "128": "icon-128.svg"
+    }
+  },
+  "content_scripts": [
+    {
+      "matches": ["https://www.linkedin.com/*"],
+      "js": ["content.js"],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": [
+        "http://localhost:3000/*",
+        "https://careeros-roan.vercel.app/*"
+      ],
+      "js": ["web-content.js"],
+      "run_at": "document_idle"
+    }
+  ],
+  "icons": {
+    "16": "icon-16.svg",
+    "48": "icon-48.svg",
+    "128": "icon-128.svg"
+  }
+}
